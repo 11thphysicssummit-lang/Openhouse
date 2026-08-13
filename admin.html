@@ -40,7 +40,26 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // 1. Dapatkan Nomor Urut Terakhir untuk Kode OH-
+        // Helper untuk parse CSV dengan aman
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim().replace(/^"|"$/g, ''));
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim().replace(/^"|"$/g, ''));
+            return result;
+        }
+
         async function getNextIndex() {
             const snapshot = await get(ref(db, 'participants'));
             if (!snapshot.exists()) return 101;
@@ -53,7 +72,7 @@
             return 101 + count;
         }
 
-        // 2. FUNGSI UPLOAD CSV
+        // FUNGSI UPLOAD CSV (SUDAH DISESUAIKAN DENGAN KANONIS Rsvp.csv)
         window.processCSV = async function() {
             const fileInput = document.getElementById('csvFile');
             const file = fileInput.files[0];
@@ -62,25 +81,32 @@
             const reader = new FileReader();
             reader.onload = async function(e) {
                 const text = e.target.result;
-                const rows = text.split('\n');
+                const rows = text.split(/\r?\n/);
+                if (rows.length < 2) { alert("File CSV kosong!"); return; }
+
                 let startIndex = await getNextIndex();
                 let addedCount = 0;
 
-                for (let i = 1; i < rows.length; i++) { // Baris 0 biasanya header
-                    if (!rows[i].trim()) continue;
-                    
-                    // Memisah koma (CSV)
-                    const cols = rows[i].split(',');
-                    // Asumsi standar format respon gform: [0]=Timestamp/Email, [1]=Nama, [2]=Instansi
-                    // Kita ambil kolom yang ada teksnya
-                    let name = cols[1] ? cols[1].replace(/"/g, '').trim() : "";
-                    let school = cols[2] ? cols[2].replace(/"/g, '').trim() : "-";
+                // Cek indeks kolom berdasarkan Header baris pertama
+                const headers = parseCSVLine(rows[0]).map(h => h.toLowerCase());
+                let nameIdx = headers.findIndex(h => h.includes("nama"));
+                let schoolIdx = headers.findIndex(h => h.includes("instansi") || h.includes("sekolah"));
 
-                    if (name && name !== "Nama Lengkap") {
+                // Fallback jika header tidak terdeteksi
+                if (nameIdx === -1) nameIdx = 1;
+                if (schoolIdx === -1) schoolIdx = 2;
+
+                for (let i = 1; i < rows.length; i++) {
+                    if (!rows[i].trim()) continue;
+                    const cols = parseCSVLine(rows[i]);
+                    
+                    let name = cols[nameIdx] || "";
+                    let school = cols[schoolIdx] || "-";
+
+                    if (name && !name.toLowerCase().includes("nama lengkap")) {
                         let code = "OH-" + startIndex;
                         let participantRef = ref(db, `participants/${code}`);
                         
-                        // Cek apakah data sudah ada biarpun di-reupload
                         await set(participantRef, {
                             name: name,
                             school: school,
@@ -92,13 +118,12 @@
                         addedCount++;
                     }
                 }
-                alert(`🎉 Berhasil mengimpor ${addedCount} data RSVP baru dari CSV!`);
+                alert(`🎉 Berhasil mengimpor ${addedCount} data RSVP dari CSV!`);
                 fileInput.value = "";
             };
             reader.readAsText(file);
         }
 
-        // 3. FUNGSI TAMBAH MANUAL RSVP (SATUAN)
         window.addManualRSVP = async function() {
             const name = document.getElementById('manualName').value.trim();
             const school = document.getElementById('manualSchool').value.trim();
@@ -121,7 +146,6 @@
             document.getElementById('manualSchool').value = "";
         }
 
-        // 4. LOAD & DISPLAY TABLE REALTIME
         const participantsRef = ref(db, 'participants');
         onValue(participantsRef, (snapshot) => {
             const tableBody = document.getElementById('participantTableBody');
@@ -160,12 +184,10 @@
             });
         });
 
-        // 5. CHECK-IN
         window.checkIn = async function(code) {
             await update(ref(db, `participants/${code}`), { isPresent: true });
         }
 
-        // 6. REGISTRASI OTS
         window.daftarOTS = async function() {
             const name = document.getElementById('otsName').value.trim();
             const school = document.getElementById('otsSchool').value.trim();
@@ -194,7 +216,7 @@
     <!-- SEKSI UPLOAD CSV -->
     <div class="card" style="background-color: #f3ebff;">
         <h3>📁 Upload Data RSVP (File CSV dari Google Form)</h3>
-        <p style="font-size:13px; color:#555;">Download Spreadsheet Google Form ke format <strong>.csv</strong> lalu upload di sini:</p>
+        <p style="font-size:13px; color:#555;">Pilih file <strong>Rsvp.csv</strong> lalu klik tombol import di bawah:</p>
         <input type="file" id="csvFile" accept=".csv">
         <button class="btn-import" onclick="processCSV()">📤 Import Data CSV</button>
     </div>
