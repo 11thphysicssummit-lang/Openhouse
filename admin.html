@@ -80,6 +80,16 @@
         .badge-success { background: #d1fae5; color: #065f46; }
         .badge-warning { background: #fef3c7; color: #92400e; }
 
+        /* DETAIL CARD ABSEN */
+        .preview-card {
+            background: #f8fafc; border: 1.5px solid var(--border-color); border-radius: 12px;
+            padding: 20px; margin-top: 20px; text-align: left;
+        }
+        .preview-row { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding: 10px 0; font-size: 14px; }
+        .preview-row:last-child { border-bottom: none; }
+        .preview-label { color: var(--text-muted); font-weight: 600; }
+        .preview-value { font-weight: 700; color: var(--text-main); }
+
         /* FINALIST CARDS GRID */
         .finalist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 20px; }
         .finalist-card { border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; background: white; text-align: center; }
@@ -96,6 +106,8 @@
         /* PROGRESS VOTE */
         .vote-bar-bg { background: #e2e8f0; height: 8px; border-radius: 8px; overflow: hidden; margin-top: 6px; }
         .vote-bar-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.4s ease; }
+
+        .hidden { display: none !important; }
     </style>
 
     <!-- Firebase SDK Modular -->
@@ -115,6 +127,8 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+
+        let currentAbsenCode = "";
 
         // FUNGSI NAVIGASI TAB
         window.openTab = function(tabName, evt) {
@@ -156,7 +170,7 @@
             document.getElementById('regSchool').value = "";
         }
 
-        // TAB KELOLA FINALIS: TAMBAH FINALIS BERSAMA FOTO & ASAL SEKOLAH
+        // TAB KELOLA FINALIS
         window.tambahFinalis = async function() {
             const name = document.getElementById('finName').value.trim();
             const school = document.getElementById('finSchool').value.trim();
@@ -171,7 +185,6 @@
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = async function() {
-                    // Kompresi Gambar Otomatis (Max Size 450px)
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
@@ -302,7 +315,6 @@
                 tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada peserta terdaftar.</td></tr>`;
             }
 
-            // Stat & Table Vote Summary
             document.getElementById('statDaftar').innerText = totalDaftar;
             document.getElementById('statHadir').innerText = totalHadir;
             document.getElementById('statVote').innerText = totalVote;
@@ -346,12 +358,16 @@
             }
         }
 
-        // TAB LIVE ABSEN
-        window.verifikasiAbsen = async function() {
+        // TAB LIVE ABSEN: STEP 1 (CEK DATA KODE)
+        window.cekKodeAbsen = async function() {
             let code = document.getElementById('absenCode').value.trim().toUpperCase();
             let msgBox = document.getElementById('absenMsg');
+            let previewCard = document.getElementById('absenPreviewCard');
 
-            if(!code) { alert("Masukkan kode peserta!"); return; }
+            msgBox.innerHTML = "";
+            previewCard.classList.add('hidden');
+
+            if(!code) { alert("Masukkan kode peserta terlebih dahulu!"); return; }
 
             const snapshot = await get(ref(db, `participants/${code}`));
             if(!snapshot.exists()) {
@@ -359,9 +375,41 @@
                 return;
             }
 
-            await update(ref(db, `participants/${code}`), { isPresent: true });
-            msgBox.innerHTML = `<div style="background:#d1fae5; color:#065f46; padding:12px; border-radius:8px; font-weight:600;">Verifikasi Berhasil: ${snapshot.val().name} (${snapshot.val().school}) dinyatakan Hadir.</div>`;
-            document.getElementById('absenCode').value = "";
+            currentAbsenCode = code;
+            const data = snapshot.val();
+
+            document.getElementById('prevCode').innerText = code;
+            document.getElementById('prevName').innerText = data.name || "-";
+            document.getElementById('prevRole').innerText = data.role || "-";
+            document.getElementById('prevSchool').innerText = data.school || "-";
+
+            const badgeStatus = document.getElementById('prevStatusBadge');
+            const btnKonfirmasi = document.getElementById('btnKonfirmasiAbsen');
+
+            if(data.isPresent) {
+                badgeStatus.className = "badge badge-success";
+                badgeStatus.innerText = "Sudah Hadir & Aktif";
+                btnKonfirmasi.classList.add('hidden');
+            } else {
+                badgeStatus.className = "badge badge-warning";
+                badgeStatus.innerText = "Belum Hadir";
+                btnKonfirmasi.classList.remove('hidden');
+            }
+
+            previewCard.classList.remove('hidden');
+        }
+
+        // TAB LIVE ABSEN: STEP 2 (KONFIRMASI KEHADIRAN)
+        window.konfirmasiAbsen = async function() {
+            if(!currentAbsenCode) return;
+
+            await update(ref(db, `participants/${currentAbsenCode}`), { isPresent: true });
+
+            document.getElementById('absenMsg').innerHTML = `<div style="background:#d1fae5; color:#065f46; padding:12px; border-radius:8px; font-weight:600;">Verifikasi Berhasil: Peserta ${currentAbsenCode} dinyatakan Hadir & Siap Vote.</div>`;
+            
+            document.getElementById('prevStatusBadge').className = "badge badge-success";
+            document.getElementById('prevStatusBadge').innerText = "Sudah Hadir & Aktif";
+            document.getElementById('btnKonfirmasiAbsen').classList.add('hidden');
         }
 
         // BATAL VOTE
@@ -436,15 +484,45 @@
             </div>
         </div>
 
-        <!-- TAB 3: LIVE ABSEN PESERTA -->
+        <!-- TAB 3: LIVE ABSEN PESERTA (UPDATED WITH DATA PREVIEW) -->
         <div id="tab-absen" class="tab-content">
             <h3>Verifikasi Kehadiran Pengunjung</h3>
-            <p style="color:var(--text-muted); font-size:14px; margin-bottom:20px;">Masukkan kode akses milik pengunjung saat registrasi di tempat:</p>
+            <p style="color:var(--text-muted); font-size:14px; margin-bottom:20px;">Masukkan kode akses pengunjung untuk memeriksa data sebelum verifikasi:</p>
+            
             <div class="form-group">
                 <input type="text" id="absenCode" placeholder="Ketik Kode (Contoh: OH01)" style="text-transform:uppercase; font-size:18px; letter-spacing:1px; text-align:center;">
             </div>
-            <button class="btn btn-success" onclick="verifikasiAbsen()">Konfirmasi Kehadiran dan Aktifkan Voting</button>
-            <div id="absenMsg" style="margin-top:20px;"></div>
+            <button class="btn btn-primary" onclick="cekKodeAbsen()">Cek Data Kode</button>
+
+            <div id="absenMsg" style="margin-top:15px;"></div>
+
+            <!-- CARD PRATINJAU DATA PESERTA -->
+            <div id="absenPreviewCard" class="preview-card hidden">
+                <div class="preview-row">
+                    <span class="preview-label">Kode Akses</span>
+                    <span class="preview-value" id="prevCode" style="color:var(--primary); font-family:monospace; font-size:16px;"></span>
+                </div>
+                <div class="preview-row">
+                    <span class="preview-label">Nama Lengkap</span>
+                    <span class="preview-value" id="prevName"></span>
+                </div>
+                <div class="preview-row">
+                    <span class="preview-label">Status / Peran</span>
+                    <span class="preview-value" id="prevRole"></span>
+                </div>
+                <div class="preview-row">
+                    <span class="preview-label">Asal Instansi</span>
+                    <span class="preview-value" id="prevSchool"></span>
+                </div>
+                <div class="preview-row">
+                    <span class="preview-label">Status Presensi</span>
+                    <span id="prevStatusBadge"></span>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <button id="btnKonfirmasiAbsen" class="btn btn-success" onclick="konfirmasiAbsen()">Konfirmasi Kehadiran dan Aktifkan Voting</button>
+                </div>
+            </div>
         </div>
 
         <!-- TAB 4: KELOLA FINALIS -->
