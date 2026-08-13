@@ -64,6 +64,7 @@
         .btn { padding: 11px 18px; border-radius: 8px; border: none; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
         .btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-hover); }
         .btn-success { background: var(--success); color: white; } .btn-success:hover { filter: brightness(0.9); }
+        .btn-warning { background: #f59e0b; color: white; } .btn-warning:hover { filter: brightness(0.9); }
         .btn-sm-edit { background: #fef3c7; color: #92400e; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
         .btn-sm-del { background: #fee2e2; color: #991b1b; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
 
@@ -108,6 +109,7 @@
         .vote-bar-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.4s ease; }
 
         .hidden { display: none !important; }
+        .flex-buttons { display: flex; gap: 12px; margin-top: 20px; }
     </style>
 
     <!-- Firebase SDK Modular -->
@@ -138,7 +140,7 @@
             if(evt) evt.currentTarget.classList.add('active');
         }
 
-        // GENERATE KODE PESERTA (OH01, OH02, dst)
+        // GENERATE KODE PESERTA
         async function getNextCode() {
             const snapshot = await get(ref(db, 'participants'));
             if (!snapshot.exists()) return "OH01";
@@ -385,15 +387,18 @@
 
             const badgeStatus = document.getElementById('prevStatusBadge');
             const btnKonfirmasi = document.getElementById('btnKonfirmasiAbsen');
+            const btnBatal = document.getElementById('btnBatalAbsen');
 
             if(data.isPresent) {
                 badgeStatus.className = "badge badge-success";
                 badgeStatus.innerText = "Sudah Hadir & Aktif";
                 btnKonfirmasi.classList.add('hidden');
+                btnBatal.classList.remove('hidden');
             } else {
                 badgeStatus.className = "badge badge-warning";
                 badgeStatus.innerText = "Belum Hadir";
                 btnKonfirmasi.classList.remove('hidden');
+                btnBatal.classList.add('hidden');
             }
 
             previewCard.classList.remove('hidden');
@@ -410,9 +415,26 @@
             document.getElementById('prevStatusBadge').className = "badge badge-success";
             document.getElementById('prevStatusBadge').innerText = "Sudah Hadir & Aktif";
             document.getElementById('btnKonfirmasiAbsen').classList.add('hidden');
+            document.getElementById('btnBatalAbsen').classList.remove('hidden');
         }
 
-        // BATAL VOTE
+        // TAB LIVE ABSEN: STEP 3 (BATALKAN KEHADIRAN)
+        window.batalkanAbsen = async function() {
+            if(!currentAbsenCode) return;
+            
+            if(confirm(`Yakin ingin membatalkan status hadir untuk peserta ${currentAbsenCode}?\n(Ini akan mengunci kembali akses kode ini untuk voting)`)) {
+                await update(ref(db, `participants/${currentAbsenCode}`), { isPresent: false });
+                
+                document.getElementById('absenMsg').innerHTML = `<div style="background:#fef3c7; color:#92400e; padding:12px; border-radius:8px; font-weight:600;">Status Hadir berhasil dibatalkan. Kode ${currentAbsenCode} dikunci kembali.</div>`;
+                
+                document.getElementById('prevStatusBadge').className = "badge badge-warning";
+                document.getElementById('prevStatusBadge').innerText = "Belum Hadir";
+                document.getElementById('btnKonfirmasiAbsen').classList.remove('hidden');
+                document.getElementById('btnBatalAbsen').classList.add('hidden');
+            }
+        }
+
+        // BATAL VOTE DARI HALAMAN HASIL VOTE
         window.hapusVote = async function(code) {
             if(confirm(`Batalkan vote milik ${code}?`)) {
                 await update(ref(db, `participants/${code}`), { hasVoted: false, votedCandidateId: null });
@@ -484,7 +506,7 @@
             </div>
         </div>
 
-        <!-- TAB 3: LIVE ABSEN PESERTA (UPDATED WITH DATA PREVIEW) -->
+        <!-- TAB 3: LIVE ABSEN PESERTA -->
         <div id="tab-absen" class="tab-content">
             <h3>Verifikasi Kehadiran Pengunjung</h3>
             <p style="color:var(--text-muted); font-size:14px; margin-bottom:20px;">Masukkan kode akses pengunjung untuk memeriksa data sebelum verifikasi:</p>
@@ -519,8 +541,9 @@
                     <span id="prevStatusBadge"></span>
                 </div>
                 
-                <div style="margin-top: 20px;">
+                <div class="flex-buttons">
                     <button id="btnKonfirmasiAbsen" class="btn btn-success" onclick="konfirmasiAbsen()">Konfirmasi Kehadiran dan Aktifkan Voting</button>
+                    <button id="btnBatalAbsen" class="btn btn-warning hidden" onclick="batalkanAbsen()">Batalkan Kehadiran (Reset)</button>
                 </div>
             </div>
         </div>
