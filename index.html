@@ -3,47 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voting Best Exhibition Open House Fisika</title>
+    <title>Voting Best Exhibition - Open House Fisika</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f4f4f9; }
-        .card { background: white; max-width: 400px; margin: 0 auto; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        input, select, button { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; }
-        button { background-color: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 20px; background-color: #f4f6f9; }
+        .card { background: white; max-width: 450px; margin: 20px auto; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #2c3e50; margin-bottom: 5px; }
+        p { color: #666; font-size: 14px; }
+        input, select, button { width: 100%; padding: 12px; margin: 10px 0; box-sizing: border-box; border-radius: 8px; border: 1px solid #ccc; font-size: 14px; }
+        button { background-color: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { background-color: #0056b3; }
+        .hidden { display: none; }
+        .alert { padding: 10px; border-radius: 6px; font-size: 13px; margin-top: 10px; }
+        .alert-error { background-color: #ffe6e6; color: #d9534f; border: 1px solid #f5c6cb; }
+        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     </style>
-</head>
-<body>
-    <div class="card">
-        <h2>Juara Exhibition - Voting</h2>
-        <p>Masukkan Kode Unik yang Anda dapatkan saat Registrasi Ulang di Lokasi:</p>
-        
-        <input type="text" id="userCode" placeholder="Contoh: OH-101" style="text-transform:uppercase;">
-        
-        <label for="candidateSelect"><strong>Pilih Finalis Favoritmu:</strong></label>
-        <select id="candidateSelect">
-            <option value="">-- Pilih Finalis --</option>
-            <option value="finalis-1">Finalis 1 - Karya A</option>
-            <option value="finalis-2">Finalis 2 - Karya B</option>
-            <option value="finalis-3">Finalis 3 - Karya C</option>
-            <option value="finalis-4">Finalis 4 - Karya D</option>
-            <option value="finalis-5">Finalis 5 - Karya E</option>
-        </select>
 
-        <button onclick="kirimVote()">Kirim Vote</button>
-    </div>
+    <!-- Firebase SDK Modular -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, get, update, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    <script>
-        function kirimVote() {
-            var kode = document.getElementById('userCode').value;
-            var pilihan = document.getElementById('candidateSelect').value;
+        // Konfigurasi Firebase dari akunmu
+        const firebaseConfig = {
+            apiKey: "AIzaSyACSezxOlaZvNNUsxmLi8mjH85q878k_tE",
+            authDomain: "open-house-efb30.firebaseapp.com",
+            databaseURL: "https://open-house-efb30-default-rtdb.firebaseio.com",
+            projectId: "open-house-efb30",
+            storageBucket: "open-house-efb30.firebasestorage.app",
+            messagingSenderId: "115256004823",
+            appId: "1:115256004823:web:e2ae984236905bface6092"
+        };
 
-            if(!kode || !pilihan) {
-                alert("Harap isi Kode Unik dan pilih Finalis terlebih dahulu!");
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let activeCode = "";
+
+        // FUNGSI TAHAP 1: VERIFIKASI KODE
+        window.verifikasiKode = async function() {
+            const codeInput = document.getElementById('userCode').value.trim().toUpperCase();
+            const msgBox = document.getElementById('msgBox');
+            msgBox.className = "alert hidden";
+
+            if(!codeInput) {
+                showMsg("Harap masukkan kode peserta Anda!", "error");
                 return;
             }
 
-            alert("Tombol berfungsi! Kode kamu: " + kode + " memilih: " + pilihan);
+            try {
+                const participantRef = ref(db, `participants/${codeInput}`);
+                const snapshot = await get(participantRef);
+
+                if (!snapshot.exists()) {
+                    showMsg("❌ Kode tidak ditemukan! Pastikan Anda sudah RSVP.", "error");
+                    return;
+                }
+
+                const data = snapshot.val();
+
+                // Cek 1: Apakah sudah hadir offline?
+                if (!data.isPresent) {
+                    showMsg("⚠️ Kode Anda belum diaktifkan! Silakan lakukan registrasi ulang offline di meja panitia terlebih dahulu.", "error");
+                    return;
+                }
+
+                // Cek 2: Apakah sudah pernah vote?
+                if (data.hasVoted) {
+                    showMsg("⚠️ Kode ini sudah pernah digunakan untuk nge-vote. Terima kasih atas partisipasi Anda!", "error");
+                    return;
+                }
+
+                // Jika Lolos Verifikasi
+                activeCode = codeInput;
+                document.getElementById('step-verifikasi').classList.add('hidden');
+                document.getElementById('step-voting').classList.remove('hidden');
+                document.getElementById('welcomeName').innerText = "Halo, " + (data.name || "Peserta") + "!";
+
+            } catch (err) {
+                console.error(err);
+                showMsg("Terjadi kesalahan koneksi. Coba lagi.", "error");
+            }
+        }
+
+        // FUNGSI TAHAP 2: KIRIM VOTE
+        window.kirimVote = async function() {
+            const selected = document.getElementById('candidateSelect').value;
+            if(!selected) {
+                alert("Pilih salah satu finalis terlebih dahulu!");
+                return;
+            }
+
+            try {
+                // Tambahkan vote ke finalis
+                const candidateRef = ref(db, `candidates/${selected}/votes`);
+                await runTransaction(candidateRef, (currentVotes) => (currentVotes || 0) + 1);
+
+                // Tandai peserta sudah vote
+                const participantRef = ref(db, `participants/${activeCode}`);
+                await update(participantRef, {
+                    hasVoted: true,
+                    votedCandidateId: selected
+                });
+
+                document.getElementById('step-voting').classList.add('hidden');
+                document.getElementById('step-sukses').classList.remove('hidden');
+
+            } catch (err) {
+                console.error(err);
+                alert("Gagal mengirim vote. Silakan coba lagi.");
+            }
+        }
+
+        function showMsg(text, type) {
+            const msgBox = document.getElementById('msgBox');
+            msgBox.innerText = text;
+            msgBox.className = `alert alert-${type === 'error' ? 'error' : 'success'}`;
         }
     </script>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Juara Exhibition</h2>
+        <p>Open House Departemen Fisika</p>
+
+        <!-- TAHAP 1: INPUT & VERIFIKASI KODE -->
+        <div id="step-verifikasi">
+            <input type="text" id="userCode" placeholder="Masukkan Kode Unik (misal: OH-101)" style="text-transform:uppercase;">
+            <button onclick="verifikasiKode()">Verifikasi Kode</button>
+            <div id="msgBox" class="alert hidden"></div>
+        </div>
+
+        <!-- TAHAP 2: DAFTAR FINALIS & VOTING -->
+        <div id="step-voting" class="hidden">
+            <h4 id="welcomeName" style="color:#28a745; margin-bottom:10px;"></h4>
+            <label for="candidateSelect"><strong>Pilih Finalis Favoritmu:</strong></label>
+            <select id="candidateSelect">
+                <option value="">-- Pilih 1 Finalis --</option>
+                <option value="finalis-1">Finalis 1</option>
+                <option value="finalis-2">Finalis 2</option>
+                <option value="finalis-3">Finalis 3</option>
+                <option value="finalis-4">Finalis 4</option>
+                <option value="finalis-5">Finalis 5</option>
+            </select>
+            <button onclick="kirimVote()">Kirim Suara (Vote)</button>
+        </div>
+
+        <!-- TAHAP 3: SUKSES -->
+        <div id="step-sukses" class="hidden">
+            <h3 style="color:#28a745;">🎉 Vote Berhasil Dikirim!</h3>
+            <p>Terima kasih telah berpartisipasi dalam memilih Juara Exhibition Open House Fisika.</p>
+        </div>
+    </div>
+
 </body>
 </html>
