@@ -3,27 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voting Best Exhibition - Open House Fisika</title>
+    <title>Voting Exhibition - Open House Fisika</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 20px; background-color: #f4f6f9; }
-        .card { background: white; max-width: 450px; margin: 20px auto; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { color: #2c3e50; margin-bottom: 5px; }
-        p { color: #666; font-size: 14px; }
-        input, select, button { width: 100%; padding: 12px; margin: 10px 0; box-sizing: border-box; border-radius: 8px; border: 1px solid #ccc; font-size: 14px; }
-        button { background-color: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:hover { background-color: #0056b3; }
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.2s ease; }
+        body { background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        
+        .main-card {
+            background: var(--card-bg); width: 100%; max-width: 500px; padding: 32px 24px;
+            border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid var(--border-color); text-align: center;
+        }
+
+        h2 { margin: 0 0 4px 0; font-size: 22px; font-weight: 700; color: var(--text-main); }
+        p { margin: 0 0 24px 0; color: var(--text-muted); font-size: 14px; }
+
+        input {
+            width: 100%; padding: 14px 16px; border-radius: 10px; border: 1.5px solid #cbd5e1;
+            font-size: 16px; outline: none; margin-bottom: 16px; text-align: center; font-weight: 600;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+
+        .btn {
+            width: 100%; padding: 14px; border-radius: 10px; border: none;
+            background: var(--primary); color: white; font-weight: 700; font-size: 15px; cursor: pointer;
+        }
+        .btn:hover { background: var(--primary-hover); }
+
+        .alert { padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-top: 14px; }
+        .alert-error { background: #fee2e2; color: #991b1b; }
+
+        /* CANDIDATE CARDS */
+        .candidate-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; text-align: left; }
+        .candidate-item {
+            border: 2px solid var(--border-color); border-radius: 12px; padding: 12px;
+            display: flex; align-items: center; gap: 14px; cursor: pointer; background: white;
+        }
+        .candidate-item:hover { border-color: var(--primary); background: #f0f7ff; }
+        .candidate-item.selected { border-color: var(--primary); background: #eff6ff; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
+        .candidate-img { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; background: #e2e8f0; }
+        .candidate-info { flex: 1; }
+        .candidate-title { font-weight: 700; font-size: 15px; color: var(--text-main); }
+        .candidate-school { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
         .hidden { display: none; }
-        .alert { padding: 10px; border-radius: 6px; font-size: 13px; margin-top: 10px; }
-        .alert-error { background-color: #ffe6e6; color: #d9534f; border: 1px solid #f5c6cb; }
-        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
     </style>
 
     <!-- Firebase SDK Modular -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, get, update, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Konfigurasi Firebase dari akunmu
         const firebaseConfig = {
             apiKey: "AIzaSyACSezxOlaZvNNUsxmLi8mjH85q878k_tE",
             authDomain: "open-house-efb30.firebaseapp.com",
@@ -38,15 +77,15 @@
         const db = getDatabase(app);
 
         let activeCode = "";
+        let selectedCandidateId = "";
 
-        // FUNGSI TAHAP 1: VERIFIKASI KODE
         window.verifikasiKode = async function() {
             const codeInput = document.getElementById('userCode').value.trim().toUpperCase();
             const msgBox = document.getElementById('msgBox');
             msgBox.className = "alert hidden";
 
             if(!codeInput) {
-                showMsg("Harap masukkan kode peserta Anda!", "error");
+                showMsg("Masukkan kode akses Anda terlebih dahulu.");
                 return;
             }
 
@@ -55,54 +94,81 @@
                 const snapshot = await get(participantRef);
 
                 if (!snapshot.exists()) {
-                    showMsg("❌ Kode tidak ditemukan! Pastikan Anda sudah RSVP.", "error");
+                    showMsg("Kode tidak ditemukan. Pastikan Anda sudah terdaftar.");
                     return;
                 }
 
                 const data = snapshot.val();
 
-                // Cek 1: Apakah sudah hadir offline?
                 if (!data.isPresent) {
-                    showMsg("⚠️ Kode Anda belum diaktifkan! Silakan lakukan registrasi ulang offline di meja panitia terlebih dahulu.", "error");
+                    showMsg("Kode Anda belum diaktifkan. Sila registrasi di meja panitia.");
                     return;
                 }
 
-                // Cek 2: Apakah sudah pernah vote?
                 if (data.hasVoted) {
-                    showMsg("⚠️ Kode ini sudah pernah digunakan untuk nge-vote. Terima kasih atas partisipasi Anda!", "error");
+                    showMsg("Kode ini sudah pernah digunakan untuk memilih.");
                     return;
                 }
 
-                // Jika Lolos Verifikasi
                 activeCode = codeInput;
+                
+                // Load Candidate List
+                await loadCandidates();
+
                 document.getElementById('step-verifikasi').classList.add('hidden');
                 document.getElementById('step-voting').classList.remove('hidden');
-                document.getElementById('welcomeName').innerText = "Halo, " + (data.name || "Peserta") + "!";
+                document.getElementById('welcomeName').innerText = "Selamat datang, " + (data.name || "Peserta");
 
             } catch (err) {
                 console.error(err);
-                showMsg("Terjadi kesalahan koneksi. Coba lagi.", "error");
+                showMsg("Gagal terhubung ke database.");
             }
         }
 
-        // FUNGSI TAHAP 2: KIRIM VOTE
+        async function loadCandidates() {
+            const candidateSnap = await get(ref(db, 'candidates'));
+            const container = document.getElementById('candidateContainer');
+            container.innerHTML = "";
+
+            if (!candidateSnap.exists()) {
+                container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">Belum ada finalis yang terdaftar.</p>`;
+                return;
+            }
+
+            candidateSnap.forEach((child) => {
+                let id = child.key;
+                let data = child.val();
+
+                let item = document.createElement('div');
+                item.className = "candidate-item";
+                item.onclick = function() {
+                    document.querySelectorAll('.candidate-item').forEach(el => el.classList.remove('selected'));
+                    item.classList.add('selected');
+                    selectedCandidateId = id;
+                };
+
+                item.innerHTML = `
+                    <img src="${data.photo}" class="candidate-img" alt="Foto">
+                    <div class="candidate-info">
+                        <div class="candidate-title">${data.name}</div>
+                        <div class="candidate-school">${data.school}</div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
         window.kirimVote = async function() {
-            const selected = document.getElementById('candidateSelect').value;
-            if(!selected) {
-                alert("Pilih salah satu finalis terlebih dahulu!");
+            if(!selectedCandidateId) {
+                alert("Sila pilih salah satu kelompok finalis terlebih dahulu!");
                 return;
             }
 
             try {
-                // Tambahkan vote ke finalis
-                const candidateRef = ref(db, `candidates/${selected}/votes`);
-                await runTransaction(candidateRef, (currentVotes) => (currentVotes || 0) + 1);
-
-                // Tandai peserta sudah vote
                 const participantRef = ref(db, `participants/${activeCode}`);
                 await update(participantRef, {
                     hasVoted: true,
-                    votedCandidateId: selected
+                    votedCandidateId: selectedCandidateId
                 });
 
                 document.getElementById('step-voting').classList.add('hidden');
@@ -110,49 +176,43 @@
 
             } catch (err) {
                 console.error(err);
-                alert("Gagal mengirim vote. Silakan coba lagi.");
+                alert("Gagal mengirim suara. Coba lagi.");
             }
         }
 
-        function showMsg(text, type) {
+        function showMsg(text) {
             const msgBox = document.getElementById('msgBox');
             msgBox.innerText = text;
-            msgBox.className = `alert alert-${type === 'error' ? 'error' : 'success'}`;
+            msgBox.className = "alert alert-error";
         }
     </script>
 </head>
 <body>
 
-    <div class="card">
-        <h2>Juara Exhibition</h2>
-        <p>Open House Departemen Fisika</p>
+    <div class="main-card">
+        <h2>Voting Exhibition Stand</h2>
+        <p>Open House Departemen Fisika 2026</p>
 
-        <!-- TAHAP 1: INPUT & VERIFIKASI KODE -->
+        <!-- STEP 1: VERIFIKASI KODE -->
         <div id="step-verifikasi">
-            <input type="text" id="userCode" placeholder="Masukkan Kode Unik (misal: OH-101)" style="text-transform:uppercase;">
-            <button onclick="verifikasiKode()">Verifikasi Kode</button>
+            <input type="text" id="userCode" placeholder="Masukkan Kode Akses (cth: OH01)" style="text-transform:uppercase;">
+            <button class="btn" onclick="verifikasiKode()">Masuk ke Halaman Vote</button>
             <div id="msgBox" class="alert hidden"></div>
         </div>
 
-        <!-- TAHAP 2: DAFTAR FINALIS & VOTING -->
+        <!-- STEP 2: PILIH FINALIS DARI DATABASE -->
         <div id="step-voting" class="hidden">
-            <h4 id="welcomeName" style="color:#28a745; margin-bottom:10px;"></h4>
-            <label for="candidateSelect"><strong>Pilih Finalis Favoritmu:</strong></label>
-            <select id="candidateSelect">
-                <option value="">-- Pilih 1 Finalis --</option>
-                <option value="finalis-1">Finalis 1</option>
-                <option value="finalis-2">Finalis 2</option>
-                <option value="finalis-3">Finalis 3</option>
-                <option value="finalis-4">Finalis 4</option>
-                <option value="finalis-5">Finalis 5</option>
-            </select>
-            <button onclick="kirimVote()">Kirim Suara (Vote)</button>
+            <h4 id="welcomeName" style="color:var(--primary); margin-top:0; margin-bottom:16px;"></h4>
+            <div class="candidate-list" id="candidateContainer">
+                <!-- Data kandidat terisi dari Firebase -->
+            </div>
+            <button class="btn" onclick="kirimVote()">Kirim Suara Anda</button>
         </div>
 
-        <!-- TAHAP 3: SUKSES -->
+        <!-- STEP 3: SUKSES -->
         <div id="step-sukses" class="hidden">
-            <h3 style="color:#28a745;">🎉 Vote Berhasil Dikirim!</h3>
-            <p>Terima kasih telah berpartisipasi dalam memilih Juara Exhibition Open House Fisika.</p>
+            <h3 style="color:#10b981; margin:0 0 10px 0;">Suara Berhasil Terkirim</h3>
+            <p>Terima kasih atas partisipasi Anda dalam Open House Departemen Fisika 2026.</p>
         </div>
     </div>
 
