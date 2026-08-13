@@ -5,23 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Admin Registrasi - Open House Fisika</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #eef2f5; max-width: 600px; margin: 0 auto; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #eef2f5; max-width: 900px; margin: 0 auto; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
         h2, h3 { color: #1a252f; margin-top: 0; }
-        input, button { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; border-radius: 6px; border: 1px solid #ccc; }
+        input, button, select { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; border-radius: 6px; border: 1px solid #ccc; }
         button { background-color: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; }
         button:hover { background-color: #218838; }
         .btn-ots { background-color: #17a2b8; }
-        .btn-ots:hover { background-color: #138496; }
-        .alert { padding: 10px; border-radius: 6px; font-size: 14px; margin-top: 10px; text-align: center; }
-        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .alert-error { background-color: #ffe6e6; color: #d9534f; border: 1px solid #f5c6cb; }
+        .btn-import { background-color: #6f42c1; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+        .bg-success { background-color: #d4edda; color: #155724; }
+        .bg-warning { background-color: #fff3cd; color: #856404; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; width: auto; }
+        .flex-group { display: flex; gap: 10px; }
     </style>
 
-    <!-- Firebase SDK Modular -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, get, update, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, get, update, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyACSezxOlaZvNNUsxmLi8mjH85q878k_tE",
@@ -36,97 +40,204 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // 1. AKTIVASI KODE DARI RSVP ONLINE
-        window.aktivasiPeserta = async function() {
-            const codeInput = document.getElementById('checkinCode').value.trim().toUpperCase();
-            const msgBox = document.getElementById('msgCheckin');
+        // 1. Dapatkan Nomor Urut Terakhir untuk Kode OH-
+        async function getNextIndex() {
+            const snapshot = await get(ref(db, 'participants'));
+            if (!snapshot.exists()) return 101;
+            let count = 0;
+            snapshot.forEach((child) => {
+                if (child.key.startsWith("OH-") && !child.key.includes("OTS")) {
+                    count++;
+                }
+            });
+            return 101 + count;
+        }
 
-            if(!codeInput) {
-                showMsg(msgBox, "Masukkan kode peserta!", "error");
+        // 2. FUNGSI UPLOAD CSV
+        window.processCSV = async function() {
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+            if (!file) { alert("Pilih file CSV terlebih dahulu!"); return; }
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const text = e.target.result;
+                const rows = text.split('\n');
+                let startIndex = await getNextIndex();
+                let addedCount = 0;
+
+                for (let i = 1; i < rows.length; i++) { // Baris 0 biasanya header
+                    if (!rows[i].trim()) continue;
+                    
+                    // Memisah koma (CSV)
+                    const cols = rows[i].split(',');
+                    // Asumsi standar format respon gform: [0]=Timestamp/Email, [1]=Nama, [2]=Instansi
+                    // Kita ambil kolom yang ada teksnya
+                    let name = cols[1] ? cols[1].replace(/"/g, '').trim() : "";
+                    let school = cols[2] ? cols[2].replace(/"/g, '').trim() : "-";
+
+                    if (name && name !== "Nama Lengkap") {
+                        let code = "OH-" + startIndex;
+                        let participantRef = ref(db, `participants/${code}`);
+                        
+                        // Cek apakah data sudah ada biarpun di-reupload
+                        await set(participantRef, {
+                            name: name,
+                            school: school,
+                            isPresent: false,
+                            hasVoted: false,
+                            votedCandidateId: null
+                        });
+                        startIndex++;
+                        addedCount++;
+                    }
+                }
+                alert(`🎉 Berhasil mengimpor ${addedCount} data RSVP baru dari CSV!`);
+                fileInput.value = "";
+            };
+            reader.readAsText(file);
+        }
+
+        // 3. FUNGSI TAMBAH MANUAL RSVP (SATUAN)
+        window.addManualRSVP = async function() {
+            const name = document.getElementById('manualName').value.trim();
+            const school = document.getElementById('manualSchool').value.trim();
+
+            if (!name) { alert("Isi nama peserta!"); return; }
+
+            let startIndex = await getNextIndex();
+            let code = "OH-" + startIndex;
+
+            await set(ref(db, `participants/${code}`), {
+                name: name,
+                school: school || "-",
+                isPresent: false,
+                hasVoted: false,
+                votedCandidateId: null
+            });
+
+            alert(`✅ Peserta RSVP Berhasil Ditambahkan!\nKode: ${code}`);
+            document.getElementById('manualName').value = "";
+            document.getElementById('manualSchool').value = "";
+        }
+
+        // 4. LOAD & DISPLAY TABLE REALTIME
+        const participantsRef = ref(db, 'participants');
+        onValue(participantsRef, (snapshot) => {
+            const tableBody = document.getElementById('participantTableBody');
+            tableBody.innerHTML = "";
+
+            if (!snapshot.exists()) {
+                tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Belum ada data. Silakan upload CSV atau tambah data RSVP.</td></tr>`;
                 return;
             }
 
-            try {
-                const participantRef = ref(db, `participants/${codeInput}`);
-                const snapshot = await get(participantRef);
+            let searchKeyword = document.getElementById('searchInput').value.toLowerCase();
 
-                if(!snapshot.exists()) {
-                    showMsg(msgBox, "❌ Kode tidak terdaftar di sistem RSVP!", "error");
-                    return;
+            snapshot.forEach((child) => {
+                let code = child.key;
+                let data = child.val();
+
+                if (data.name.toLowerCase().includes(searchKeyword) || data.school.toLowerCase().includes(searchKeyword) || code.toLowerCase().includes(searchKeyword)) {
+                    let row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${code}</strong></td>
+                        <td>${data.name}</td>
+                        <td>${data.school}</td>
+                        <td>
+                            ${data.isPresent 
+                                ? `<span class="badge bg-success">Hadir</span>` 
+                                : `<span class="badge bg-warning">Belum Hadir</span>`}
+                        </td>
+                        <td>
+                            ${!data.isPresent 
+                                ? `<button class="btn-sm" onclick="checkIn('${code}')">Check-In Offline</button>` 
+                                : `<span style="color:green; font-size:12px;">Ready to Vote</span>`}
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
                 }
+            });
+        });
 
-                await update(participantRef, { isPresent: true });
-                showMsg(msgBox, `✅ Berhasil! ${snapshot.val().name || codeInput} diaktifkan & siap nge-vote!`, "success");
-                document.getElementById('checkinCode').value = "";
-
-            } catch (err) {
-                console.error(err);
-                showMsg(msgBox, "Terjadi kesalahan!", "error");
-            }
+        // 5. CHECK-IN
+        window.checkIn = async function(code) {
+            await update(ref(db, `participants/${code}`), { isPresent: true });
         }
 
-        // 2. REGISTRASI PESERTA BARU (OTS)
+        // 6. REGISTRASI OTS
         window.daftarOTS = async function() {
             const name = document.getElementById('otsName').value.trim();
             const school = document.getElementById('otsSchool').value.trim();
-            const msgBox = document.getElementById('msgOTS');
 
-            if(!name) {
-                showMsg(msgBox, "Harap isi nama pengunjung!", "error");
-                return;
-            }
+            if(!name) { alert("Isi nama pengunjung!"); return; }
 
-            // Generate Kode Unik OTS (Contoh: OH-OTS742)
             const randomCode = "OH-OTS" + Math.floor(100 + Math.random() * 900);
-            
-            try {
-                const newRef = ref(db, `participants/${randomCode}`);
-                await set(newRef, {
-                    name: name,
-                    school: school || "-",
-                    isPresent: true, // Langsung aktif karena daftar di lokasi
-                    hasVoted: false,
-                    votedCandidateId: null
-                });
+            await set(ref(db, `participants/${randomCode}`), {
+                name: name,
+                school: school || "-",
+                isPresent: true,
+                hasVoted: false,
+                votedCandidateId: null
+            });
 
-                showMsg(msgBox, `🎉 OTS Berhasil! KODE PESERTA: ${randomCode}`, "success");
-                document.getElementById('otsName').value = "";
-                document.getElementById('otsSchool').value = "";
-
-            } catch (err) {
-                console.error(err);
-                showMsg(msgBox, "Gagal membuat kode OTS!", "error");
-            }
-        }
-
-        function showMsg(el, text, type) {
-            el.innerText = text;
-            el.className = `alert alert-${type}`;
-            el.style.display = 'block';
+            alert(`🎉 OTS Berhasil! KODE PESERTA: ${randomCode}`);
+            document.getElementById('otsName').value = "";
+            document.getElementById('otsSchool').value = "";
         }
     </script>
 </head>
 <body>
 
-    <h2>🛠️ Panel Panitia - Open House</h2>
+    <h2>🛠️ Panel Admin Registrasi - Open House</h2>
 
-    <!-- SEKSI 1: CHECK-IN RSVP -->
-    <div class="card">
-        <h3>1. Check-In Pengunjung RSVP</h3>
-        <p>Ketik Kode Unik milik pengunjung yang menunjukkan kartu/tiket RSVP:</p>
-        <input type="text" id="checkinCode" placeholder="Masukkan Kode (contoh: OH-101)" style="text-transform:uppercase;">
-        <button onclick="aktivasiPeserta()">Konfirmasi Kehadiran (Aktifkan Vote)</button>
-        <div id="msgCheckin" class="alert" style="display:none;"></div>
+    <!-- SEKSI UPLOAD CSV -->
+    <div class="card" style="background-color: #f3ebff;">
+        <h3>📁 Upload Data RSVP (File CSV dari Google Form)</h3>
+        <p style="font-size:13px; color:#555;">Download Spreadsheet Google Form ke format <strong>.csv</strong> lalu upload di sini:</p>
+        <input type="file" id="csvFile" accept=".csv">
+        <button class="btn-import" onclick="processCSV()">📤 Import Data CSV</button>
     </div>
 
-    <!-- SEKSI 2: REGISTRASI OTS -->
+    <!-- SEKSI TAMBAH MANUAL RSVP -->
     <div class="card">
-        <h3>2. Pendaftaran On-The-Spot (OTS)</h3>
-        <p>Bagi pengunjung yang belum pernah ngisi RSVP online sebelumnya:</p>
-        <input type="text" id="otsName" placeholder="Nama Lengkap Pengunjung">
-        <input type="text" id="otsSchool" placeholder="Asal Sekolah / Instansi">
-        <button class="btn-ots" onclick="daftarOTS()">Buat Kode & Aktifkan</button>
-        <div id="msgOTS" class="alert" style="display:none;"></div>
+        <h3>➕ Tambah RSVP Susulan (Manual)</h3>
+        <div class="flex-group">
+            <input type="text" id="manualName" placeholder="Nama Lengkap">
+            <input type="text" id="manualSchool" placeholder="Asal Instansi">
+        </div>
+        <button onclick="addManualRSVP()">+ Tambah ke Daftar RSVP</button>
+    </div>
+
+    <!-- TABEL PESERTA -->
+    <div class="card">
+        <h3>📋 Daftar Peserta RSVP</h3>
+        <input type="text" id="searchInput" placeholder="🔍 Cari nama peserta, sekolah, atau kode...">
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Kode</th>
+                    <th>Nama Lengkap</th>
+                    <th>Asal Instansi</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="participantTableBody">
+                <!-- Auto-filled dari Firebase -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- SEKSI OTS -->
+    <div class="card">
+        <h3>🎟️ Pendaftaran On-The-Spot (OTS)</h3>
+        <div class="flex-group">
+            <input type="text" id="otsName" placeholder="Nama Pengunjung">
+            <input type="text" id="otsSchool" placeholder="Asal Instansi">
+        </div>
+        <button class="btn-ots" onclick="daftarOTS()">+ Buat Kode OTS & Aktifkan</button>
     </div>
 
 </body>
