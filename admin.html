@@ -3,33 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Registrasi - Open House Fisika</title>
+    <title>Dashboard Admin - Open House Fisika</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #eef2f5; max-width: 900px; margin: 0 auto; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 25px; }
-        h2, h3 { color: #1a252f; margin-top: 0; margin-bottom: 15px; }
-        .form-group { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
-        .form-group > div { flex: 1; min-width: 200px; }
-        label { display: block; margin-bottom: 5px; font-weight: 600; color: #495057; font-size: 14px; }
-        input, select, button { width: 100%; padding: 12px; box-sizing: border-box; border-radius: 8px; border: 1px solid #ced4da; font-size: 14px; }
-        button { background-color: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 15px; }
-        button:hover { background-color: #218838; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f4f6f9; color: #333; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h2 { margin-top: 0; color: #1a252f; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; background: white; }
-        th, td { border-bottom: 1px solid #ddd; padding: 12px 15px; text-align: left; }
-        th { background-color: #007bff; color: white; font-weight: 600; border-radius: 4px 4px 0 0;}
-        tr:hover { background-color: #f8f9fa; }
-        .badge { padding: 5px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;}
+        /* MENU NAVBAR TAB */
+        .nav-tabs { display: flex; gap: 8px; border-bottom: 2px solid #ccc; margin-bottom: 20px; overflow-x: auto; }
+        .nav-tab { padding: 12px 20px; background-color: #e9ecef; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; color: #495057; font-size: 14px; white-space: nowrap; }
+        .nav-tab.active { background-color: #007bff; color: white; }
         
-        .search-bar { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ced4da; font-size: 14px; }
+        /* ISI TAB CONTENT */
+        .tab-content { display: none; background: white; padding: 25px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .tab-content.active { display: block; }
+        
+        /* FORM & TABLE STYLES */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
+        input, select, button { width: 100%; padding: 10px; box-sizing: border-box; border-radius: 6px; border: 1px solid #ced4da; font-size: 14px; }
+        button { background-color: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background-color: #0056b3; }
+        .btn-success { background-color: #28a745; } .btn-success:hover { background-color: #218838; }
+        .btn-danger { background-color: #dc3545; padding: 5px 10px; width: auto; font-size: 12px; } .btn-danger:hover { background-color: #c82333; }
+        .btn-warning { background-color: #ffc107; color: #212529; padding: 5px 10px; width: auto; font-size: 12px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: left; }
+        th { background-color: #f8f9fa; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+        .badge-success { background-color: #d4edda; color: #155724; }
+        .badge-danger { background-color: #f8d7da; color: #721c24; }
+        
+        .grid-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .card-stat { background: #e9ecef; padding: 15px; border-radius: 8px; text-align: center; }
+        .card-stat h3 { margin: 0; font-size: 28px; color: #007bff; }
     </style>
 
-    <!-- Firebase SDK Modular -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, get, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Konfigurasi Database-mu
         const firebaseConfig = {
             apiKey: "AIzaSyACSezxOlaZvNNUsxmLi8mjH85q878k_tE",
             authDomain: "open-house-efb30.firebaseapp.com",
@@ -43,153 +57,262 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Menghitung nomor urut kode agar selalu lanjut (OH-101, OH-102, dst)
+        // FUNGSI GANTI TAB
+        window.openTab = function(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // GENERATE KODE UNIK DENGAN CEK
         async function getNextCode() {
             const snapshot = await get(ref(db, 'participants'));
             if (!snapshot.exists()) return 101;
             let count = 0;
-            snapshot.forEach(() => { count++; });
+            snapshot.forEach(() => count++);
             return 101 + count;
         }
 
-        // FUNGSI INPUT DATA PENDAFTARAN
-        window.tambahPeserta = async function() {
-            const name = document.getElementById('inputName').value.trim();
-            const role = document.getElementById('inputRole').value.trim();
-            const school = document.getElementById('inputSchool').value.trim();
+        // TAB 1: DAFTARKAN PESERTA
+        window.daftarkanPeserta = async function() {
+            const name = document.getElementById('regName').value.trim();
+            const role = document.getElementById('regRole').value.trim();
+            const school = document.getElementById('regSchool').value.trim();
 
-            if (!name || !role) { 
-                alert("Harap isi Nama dan Status/Peran Pengunjung!"); 
-                return; 
-            }
+            if (!name) { alert("Isi nama peserta!"); return; }
 
-            // Generate Kode (contoh: OH-152)
-            let startIndex = await getNextCode();
-            let code = "OH-" + startIndex;
+            let codeIndex = await getNextCode();
+            let code = "OH-" + codeIndex;
 
-            // Simpan ke database
             await set(ref(db, `participants/${code}`), {
                 name: name,
-                role: role,
+                role: role || "Siswa",
                 school: school || "-",
-                isPresent: true, // Karena diinput saat datang, langsung dihitung Hadir
+                isPresent: false,
                 hasVoted: false,
                 votedCandidateId: null
             });
 
-            alert(`🎉 Berhasil Didata!\n\nKODE VOTING: ${code}\nSilakan berikan kode ini ke pengunjung.`);
-            
-            // Kosongkan form setelah input
-            document.getElementById('inputName').value = "";
-            document.getElementById('inputRole').value = "Siswa";
-            document.getElementById('inputSchool').value = "";
-            document.getElementById('inputName').focus();
+            alert(`🎉 Peserta Berhasil Terdaftar!\nKODE AKSES: ${code}`);
+            document.getElementById('regName').value = "";
+            document.getElementById('regSchool').value = "";
         }
 
-        // LOAD TABEL PESERTA SECARA REAL-TIME
-        const participantsRef = ref(db, 'participants');
-        onValue(participantsRef, (snapshot) => {
-            const tableBody = document.getElementById('participantTableBody');
+        // REALTIME LISTENER DATA PESERTA
+        onValue(ref(db, 'participants'), (snapshot) => {
+            const tableBody = document.getElementById('listPesertaTable');
             tableBody.innerHTML = "";
+            
+            let totalDaftar = 0, totalHadir = 0, totalVote = 0;
+            let voteCounts = { "finalis-1": 0, "finalis-2": 0, "finalis-3": 0, "finalis-4": 0, "finalis-5": 0 };
+            const logVoteTable = document.getElementById('logVoteTable');
+            logVoteTable.innerHTML = "";
 
-            if (!snapshot.exists()) {
-                tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px;">Belum ada data pendaftar.</td></tr>`;
-                return;
-            }
+            if (snapshot.exists()) {
+                snapshot.forEach((child) => {
+                    totalDaftar++;
+                    let code = child.key;
+                    let data = child.val();
 
-            let searchKeyword = document.getElementById('searchInput').value.toLowerCase();
+                    if(data.isPresent) totalHadir++;
+                    if(data.hasVoted) {
+                        totalVote++;
+                        if(voteCounts[data.votedCandidateId] !== undefined) {
+                            voteCounts[data.votedCandidateId]++;
+                        }
 
-            snapshot.forEach((child) => {
-                let code = child.key;
-                let data = child.val();
-                
-                // Pastikan role ada valuenya agar tidak error saat dicari
-                let roleDisplay = data.role || "-"; 
+                        // Isi Log Vote
+                        let vRow = document.createElement('tr');
+                        vRow.innerHTML = `
+                            <td><strong>${code}</strong></td>
+                            <td>${data.name}</td>
+                            <td><span class="badge badge-success">${data.votedCandidateId.toUpperCase()}</span></td>
+                            <td>
+                                <button class="btn-danger" onclick="hapusVote('${code}', '${data.votedCandidateId}')">Batalkan Vote</button>
+                            </td>
+                        `;
+                        logVoteTable.appendChild(vRow);
+                    }
 
-                // Fitur Cari Data
-                if (data.name.toLowerCase().includes(searchKeyword) || 
-                    data.school.toLowerCase().includes(searchKeyword) || 
-                    roleDisplay.toLowerCase().includes(searchKeyword) || 
-                    code.toLowerCase().includes(searchKeyword)) {
-                    
+                    // Isi Tab Peserta Terdaftar
                     let row = document.createElement('tr');
                     row.innerHTML = `
-                        <td style="font-family: monospace; font-size: 15px; font-weight: bold; color: #d9534f;">${code}</td>
-                        <td><strong>${data.name}</strong></td>
-                        <td>${roleDisplay}</td>
+                        <td><strong>${code}</strong></td>
+                        <td>${data.name}</td>
+                        <td>${data.role || '-'}</td>
                         <td>${data.school}</td>
-                        <td><span class="badge">✔ Hadir & Aktif</span></td>
-                        <td style="font-size: 12px; color: ${data.hasVoted ? 'green' : 'orange'}; font-weight:bold;">
-                            ${data.hasVoted ? "Sudah Vote" : "Belum Vote"}
+                        <td>${data.isPresent ? '<span class="badge badge-success">Hadir</span>' : '<span class="badge badge-danger">Belum</span>'}</td>
+                        <td>
+                            <button class="btn-warning" onclick="editPeserta('${code}', '${data.name}', '${data.role}', '${data.school}')">Edit</button>
+                            <button class="btn-danger" onclick="hapusPeserta('${code}')">Hapus</button>
                         </td>
                     `;
                     tableBody.appendChild(row);
-                }
-            });
+                });
+            } else {
+                tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Belum ada peserta terdaftar.</td></tr>`;
+            }
+
+            // Update Ringkasan Stat
+            document.getElementById('statDaftar').innerText = totalDaftar;
+            document.getElementById('statHadir').innerText = totalHadir;
+            document.getElementById('statVote').innerText = totalVote;
+            for(let i=1; i<=5; i++) {
+                document.getElementById(`count-f${i}`).innerText = voteCounts[`finalis-${i}`];
+            }
         });
 
-        // Fitur auto-update pencarian
-        window.filterData = function() {
-            const evt = new Event('value');
+        // TAB 2: EDIT & HAPUS PESERTA
+        window.editPeserta = async function(code, oldName, oldRole, oldSchool) {
+            let newName = prompt("Ubah Nama:", oldName);
+            if(newName === null) return;
+            let newRole = prompt("Ubah Status:", oldRole);
+            let newSchool = prompt("Ubah Asal Instansi:", oldSchool);
+
+            await update(ref(db, `participants/${code}`), {
+                name: newName,
+                role: newRole,
+                school: newSchool
+            });
+            alert("Data berhasil diperbarui!");
+        }
+
+        window.hapusPeserta = async function(code) {
+            if(confirm(`Yakin ingin menghapus peserta ${code}?`)) {
+                await remove(ref(db, `participants/${code}`));
+            }
+        }
+
+        // TAB 3: LIVE ABSEN PESERTA (HARI-H)
+        window.verifikasiAbsen = async function() {
+            let code = document.getElementById('absenCode').value.trim().toUpperCase();
+            let msgBox = document.getElementById('absenMsg');
+
+            if(!code) { alert("Masukkan kode peserta!"); return; }
+
+            const snapshot = await get(ref(db, `participants/${code}`));
+            if(!snapshot.exists()) {
+                msgBox.innerHTML = `<span style="color:red;">❌ Kode ${code} TIDAK DITEMUKAN! Silakan daftarkan terlebih dahulu.</span>`;
+                return;
+            }
+
+            await update(ref(db, `participants/${code}`), { isPresent: true });
+            msgBox.innerHTML = `<span style="color:green;">✅ VERIFIKASI BERHASIL! <strong>${snapshot.val().name}</strong> (${snapshot.val().school}) dinyatakan HADIR & siap nge-vote.</span>`;
+            document.getElementById('absenCode').value = "";
+        }
+
+        // TAB 4: HAPUS/BATALKAN VOTE
+        window.hapusVote = async function(code, candidateId) {
+            if(confirm(`Batalkan vote milik ${code}? Status vote peserta ini akan di-reset.`)) {
+                await update(ref(db, `participants/${code}`), {
+                    hasVoted: false,
+                    votedCandidateId: null
+                });
+            }
         }
     </script>
 </head>
 <body>
 
-    <h2>📝 Meja Registrasi (Front Desk) - Open House</h2>
+    <div class="container">
+        <h2>🛠️ Admin Panel - Open House Fisika</h2>
 
-    <!-- FORM INPUT PENDAFTARAN -->
-    <div class="card" style="border-top: 5px solid #28a745;">
-        <h3>➕ Data Pengunjung Baru</h3>
-        
-        <div class="form-group">
-            <div>
-                <label for="inputName">Nama Panjang</label>
-                <input type="text" id="inputName" placeholder="Contoh: Budi Santoso">
+        <!-- MENU CABANG TAB -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="openTab('tab-daftar')">➕ Daftarkan Peserta</button>
+            <button class="nav-tab" onclick="openTab('tab-peserta')">📋 Peserta Terdaftar</button>
+            <button class="nav-tab" onclick="openTab('tab-absen')">📍 Live Absen Peserta</button>
+            <button class="nav-tab" onclick="openTab('tab-vote')">📊 Live Hasil Vote</button>
+        </div>
+
+        <!-- 1. TAB DAFTARKAN PESERTA -->
+        <div id="tab-daftar" class="tab-content active">
+            <h3>Pendaftaran Awal Peserta (RSVP)</h3>
+            <div class="form-group">
+                <label>Nama Lengkap</label>
+                <input type="text" id="regName" placeholder="Nama Lengkap Peserta">
             </div>
-            
-            <div>
-                <label for="inputRole">Status Pengunjung</label>
-                <!-- Kombinasi Datalist & Input text agar bisa pilih ATAU ngetik manual -->
-                <input type="text" id="inputRole" list="roleOptions" placeholder="Pilih atau ketik status..." value="Siswa">
+            <div class="form-group">
+                <label>Status Pengunjung</label>
+                <input type="text" id="regRole" list="roleOptions" placeholder="Pilih / ketik status..." value="Siswa">
                 <datalist id="roleOptions">
-                    <option value="Siswa">
-                    <option value="Guru / Pendamping">
-                    <option value="Orang Tua Murid">
-                    <option value="Mahasiswa">
-                    <option value="Umum">
+                    <option value="Siswa"><option value="Guru"><option value="Orang Tua"><option value="Umum">
                 </datalist>
             </div>
-
-            <div>
-                <label for="inputSchool">Asal Instansi/Sekolah</label>
-                <input type="text" id="inputSchool" placeholder="Contoh: SMAN 5 Surabaya">
+            <div class="form-group">
+                <label>Asal Sekolah / Instansi</label>
+                <input type="text" id="regSchool" placeholder="Contoh: SMAN 1 Surabaya">
             </div>
+            <button class="btn-success" onclick="daftarkanPeserta()">Simpan & Dapatkan Kode</button>
         </div>
-        
-        <button onclick="tambahPeserta()">Buat Kode & Daftarkan Pengunjung</button>
-    </div>
 
-    <!-- TABEL LOG PESERTA -->
-    <div class="card">
-        <h3>📋 Daftar Log Pengunjung Masuk</h3>
-        <input type="text" id="searchInput" class="search-bar" placeholder="🔍 Cari nama pengunjung, sekolah, status, atau kode..." onkeyup="filterData()">
-        
-        <table>
-            <thead>
-                <tr>
-                    <th>Kode Akses</th>
-                    <th>Nama Panjang</th>
-                    <th>Status</th>
-                    <th>Asal Instansi</th>
-                    <th>Presensi</th>
-                    <th>Aktivitas Vote</th>
-                </tr>
-            </thead>
-            <tbody id="participantTableBody">
-                <!-- Data akan terisi otomatis di sini -->
-            </tbody>
-        </table>
+        <!-- 2. TAB PESERTA TERDAFTAR -->
+        <div id="tab-peserta" class="tab-content">
+            <h3>Daftar Seluruh Peserta</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kode</th>
+                        <th>Nama Lengkap</th>
+                        <th>Status</th>
+                        <th>Asal Instansi</th>
+                        <th>Absen</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="listPesertaTable"></tbody>
+            </table>
+        </div>
+
+        <!-- 3. TAB LIVE ABSEN PESERTA (HARI-H) -->
+        <div id="tab-absen" class="tab-content">
+            <h3>Verifikasi Kehadiran Peserta (Hari-H)</h3>
+            <p>Masukkan Kode Akses peserta saat registrasi di tempat:</p>
+            <div class="form-group">
+                <input type="text" id="absenCode" placeholder="Masukkan Kode (contoh: OH-101)" style="text-transform:uppercase;">
+            </div>
+            <button class="btn-success" onclick="verifikasiAbsen()">Verifikasi & Aktifkan Vote</button>
+            <div id="absenMsg" style="margin-top: 15px; font-size: 16px;"></div>
+        </div>
+
+        <!-- 4. TAB LIVE HASIL VOTE -->
+        <div id="tab-vote" class="tab-content">
+            <h3>Ringkasan Voting</h3>
+            <div class="grid-summary">
+                <div class="card-stat"><h3 id="statDaftar">0</h3><small>Total Terdaftar</small></div>
+                <div class="card-stat"><h3 id="statHadir">0</h3><small>Total Hadir</small></div>
+                <div class="card-stat"><h3 id="statVote">0</h3><small>Suara Masuk</small></div>
+            </div>
+
+            <h4>Perolehan Suara Finalis</h4>
+            <table>
+                <thead>
+                    <tr><th>Nama Finalis</th><th>Jumlah Suara</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Finalis 1</td><td id="count-f1">0</td></tr>
+                    <tr><td>Finalis 2</td><td id="count-f2">0</td></tr>
+                    <tr><td>Finalis 3</td><td id="count-f3">0</td></tr>
+                    <tr><td>Finalis 4</td><td id="count-f4">0</td></tr>
+                    <tr><td>Finalis 5</td><td id="count-f5">0</td></tr>
+                </tbody>
+            </table>
+
+            <h4 style="margin-top:25px;">Log Suara Masuk (Detail)</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kode Peserta</th>
+                        <th>Nama Peserta</th>
+                        <th>Pilihan Finalis</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="logVoteTable"></tbody>
+            </table>
+        </div>
+
     </div>
 
 </body>
