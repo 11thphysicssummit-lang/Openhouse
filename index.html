@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voting Best Exhibition Open House Fisika</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f4f4f9; }
+        .card { background: white; max-width: 400px; margin: 0 auto; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        input, select, button { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; }
+        button { background-color: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Juara Exhibition - Voting</h2>
+        <p>Masukkan Kode Unik yang Anda dapatkan saat Registrasi Ulang di Lokasi:</p>
+        
+        <input type="text" id="userCode" placeholder="Contoh: OH-101" style="text-transform:uppercase;">
+        
+        <label for="candidateSelect"><strong>Pilih Finalis Favoritmu:</strong></label>
+        <select id="candidateSelect">
+            <option value="">-- Pilih Finalis --</option>
+            <option value="finalis-1">Finalis 1 - Karya A</option>
+            <option value="finalis-2">Finalis 2 - Karya B</option>
+            <option value="finalis-3">Finalis 3 - Karya C</option>
+            <option value="finalis-4">Finalis 4 - Karya D</option>
+            <option value="finalis-5">Finalis 5 - Karya E</option>
+        </select>
+
+        <button onclick="kirimVote()">Kirim Vote</button>
+    </div>
+
+    <script>
+        function kirimVote() {
+            var kode = document.getElementById('userCode').value;
+            var pilihan = document.getElementById('candidateSelect').value;
+
+            if(!kode || !pilihan) {
+                alert("Harap isi Kode Unik dan pilih Finalis terlebih dahulu!");
+                return;
+            }
+
+            alert("Tombol berfungsi! Kode kamu: " + kode + " memilih: " + pilihan);
+        }
+    </script>
+</body>
+</html>
