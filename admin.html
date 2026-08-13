@@ -7,8 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
             --bg-color: #f8fafc;
             --card-bg: #ffffff;
             --text-main: #0f172a;
@@ -21,76 +21,81 @@
 
         * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.2s ease; }
         body { background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 24px; min-height: 100vh; }
-        .container { max-width: 1050px; margin: 0 auto; }
+        .container { max-width: 1100px; margin: 0 auto; }
 
-        /* HEADER & BANNER */
+        /* HEADER BANNER */
         .header-banner {
-            background: linear-gradient(135deg, #3b82f6 0%, #4f46e5 50%, #7c3aed 100%);
-            color: white; padding: 28px 32px; border-radius: 20px;
-            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.3); margin-bottom: 24px;
+            background: #1e293b; color: white; padding: 24px 30px; border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 24px;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;
+            border-left: 6px solid var(--primary);
         }
-        .header-title h2 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
-        .header-title p { margin: 6px 0 0 0; opacity: 0.9; font-size: 14px; }
-        .header-badge { background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(8px); padding: 6px 14px; border-radius: 30px; font-size: 13px; font-weight: 600; }
+        .header-title h2 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+        .header-title p { margin: 4px 0 0 0; color: #94a3b8; font-size: 14px; }
+        .header-badge { background: #334155; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; color: #cbd5e1; border: 1px solid #475569; }
 
         /* NAV TABS */
-        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
+        .nav-tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
         .nav-tab {
             background: white; border: 1px solid var(--border-color); color: var(--text-muted);
-            padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer;
-            display: flex; align-items: center; gap: 8px; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            padding: 12px 18px; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer;
+            white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
         .nav-tab:hover { background: #f1f5f9; color: var(--text-main); }
-        .nav-tab.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25); }
+        .nav-tab.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2); }
 
-        /* CARD CONTENT */
-        .tab-content { display: none; background: var(--card-bg); border-radius: 18px; padding: 28px; border: 1px solid var(--border-color); box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03); }
-        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        /* TAB CONTENT */
+        .tab-content { display: none; background: var(--card-bg); border-radius: 16px; padding: 28px; border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .tab-content.active { display: block; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-
-        h3 { margin-top: 0; color: var(--text-main); font-size: 18px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+        h3 { margin-top: 0; color: var(--text-main); font-size: 18px; font-weight: 700; margin-bottom: 20px; border-bottom: 2px solid var(--bg-color); padding-bottom: 10px; }
 
         /* FORMS */
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-bottom: 20px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px; }
         .form-group { margin-bottom: 16px; }
         label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
         input, select {
-            width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border-color);
+            width: 100%; padding: 11px 14px; border-radius: 8px; border: 1px solid var(--border-color);
             background: #f8fafc; font-size: 14px; outline: none; color: var(--text-main);
         }
-        input:focus, select:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+        input:focus, select:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
 
         /* BUTTONS */
-        .btn { padding: 12px 20px; border-radius: 10px; border: none; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+        .btn { padding: 11px 18px; border-radius: 8px; border: none; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
         .btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-hover); }
         .btn-success { background: var(--success); color: white; } .btn-success:hover { filter: brightness(0.9); }
         .btn-sm-edit { background: #fef3c7; color: #92400e; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
         .btn-sm-del { background: #fee2e2; color: #991b1b; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
 
         /* TABLES */
-        .table-responsive { overflow-x: auto; margin-top: 15px; border-radius: 12px; border: 1px solid var(--border-color); }
+        .table-responsive { overflow-x: auto; margin-top: 15px; border-radius: 10px; border: 1px solid var(--border-color); }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-        th { background: #f1f5f9; padding: 14px 16px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color); }
-        td { padding: 14px 16px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        th { background: #f1f5f9; padding: 12px 14px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color); }
+        td { padding: 12px 14px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
         tr:last-child td { border-bottom: none; }
         tr:hover { background: #f8fafc; }
 
         /* BADGES */
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .badge { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-block; }
         .badge-success { background: #d1fae5; color: #065f46; }
         .badge-warning { background: #fef3c7; color: #92400e; }
 
+        /* FINALIST CARDS GRID */
+        .finalist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 20px; }
+        .finalist-card { border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; background: white; text-align: center; }
+        .finalist-img { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; background: #e2e8f0; margin-bottom: 10px; }
+        .finalist-name { font-weight: 700; font-size: 15px; margin: 4px 0; color: var(--text-main); }
+        .finalist-school { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+
         /* STATS GRID */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
-        .stat-card { background: #f8fafc; border: 1px solid var(--border-color); padding: 20px; border-radius: 14px; text-align: center; }
-        .stat-card h4 { margin: 0; font-size: 32px; font-weight: 700; color: var(--primary); }
-        .stat-card p { margin: 4px 0 0 0; font-size: 13px; color: var(--text-muted); font-weight: 500; }
+        .stat-card { background: #f8fafc; border: 1px solid var(--border-color); padding: 18px; border-radius: 12px; text-align: center; }
+        .stat-card h4 { margin: 0; font-size: 28px; font-weight: 700; color: var(--primary); }
+        .stat-card p { margin: 4px 0 0 0; font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
 
         /* PROGRESS VOTE */
-        .vote-bar-bg { background: #e2e8f0; height: 10px; border-radius: 10px; overflow: hidden; margin-top: 6px; }
-        .vote-bar-fill { background: linear-gradient(90deg, #4f46e5, #7c3aed); height: 100%; width: 0%; transition: width 0.5s ease; }
+        .vote-bar-bg { background: #e2e8f0; height: 8px; border-radius: 8px; overflow: hidden; margin-top: 6px; }
+        .vote-bar-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.4s ease; }
     </style>
 
     <!-- Firebase SDK Modular -->
@@ -111,7 +116,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // FUNGSI GANTI TAB
+        // FUNGSI NAVIGASI TAB
         window.openTab = function(tabName, evt) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
@@ -119,7 +124,7 @@
             if(evt) evt.currentTarget.classList.add('active');
         }
 
-        // GENERATE KODE PENDEK (OH01, OH02, dst)
+        // GENERATE KODE PESERTA (OH01, OH02, dst)
         async function getNextCode() {
             const snapshot = await get(ref(db, 'participants'));
             if (!snapshot.exists()) return "OH01";
@@ -146,18 +151,109 @@
                 votedCandidateId: null
             });
 
-            alert(`🎉 Berhasil Terdaftar!\n\nKODE AKSES PESERTA: ${code}`);
+            alert(`Berhasil Terdaftar.\n\nKODE AKSES PESERTA: ${code}`);
             document.getElementById('regName').value = "";
             document.getElementById('regSchool').value = "";
         }
 
-        // REALTIME LISTENER DATA
-        onValue(ref(db, 'participants'), (snapshot) => {
+        // TAB KELOLA FINALIS: TAMBAH FINALIS BERSAMA FOTO & ASAL SEKOLAH
+        window.tambahFinalis = async function() {
+            const name = document.getElementById('finName').value.trim();
+            const school = document.getElementById('finSchool').value.trim();
+            const fileInput = document.getElementById('finPhoto');
+
+            if (!name || !school) { alert("Sila isi Nama Kelompok dan Asal Sekolah!"); return; }
+            if (fileInput.files.length === 0) { alert("Pilih foto kelompok terlebih dahulu!"); return; }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = async function() {
+                    // Kompresi Gambar Otomatis (Max Size 450px)
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const max_size = 450;
+
+                    if (width > height) {
+                        if (width > max_size) { height *= max_size / width; width = max_size; }
+                    } else {
+                        if (height > max_size) { width *= max_size / height; height = max_size; }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const photoBase64 = canvas.toDataURL('image/jpeg', 0.75);
+                    const candidateId = "finalis-" + Date.now();
+
+                    await set(ref(db, `candidates/${candidateId}`), {
+                        name: name,
+                        school: school,
+                        photo: photoBase64
+                    });
+
+                    alert("Data Finalis Berhasil Ditambahkan!");
+                    document.getElementById('finName').value = "";
+                    document.getElementById('finSchool').value = "";
+                    fileInput.value = "";
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // REALTIME LISTENER FINALIS
+        onValue(ref(db, 'candidates'), (snapshot) => {
+            const grid = document.getElementById('finalistDisplayGrid');
+            grid.innerHTML = "";
+
+            if (!snapshot.exists()) {
+                grid.innerHTML = `<p style="color:var(--text-muted); grid-column: 1/-1;">Belum ada data finalis yang dimasukkan.</p>`;
+                return;
+            }
+
+            snapshot.forEach((child) => {
+                let id = child.key;
+                let data = child.val();
+
+                let card = document.createElement('div');
+                card.className = "finalist-card";
+                card.innerHTML = `
+                    <img src="${data.photo}" class="finalist-img" alt="Foto Kelompok">
+                    <div class="finalist-name">${data.name}</div>
+                    <div class="finalist-school">${data.school}</div>
+                    <button class="btn-sm-del" onclick="hapusFinalis('${id}')">Hapus Finalis</button>
+                `;
+                grid.appendChild(card);
+            });
+        });
+
+        window.hapusFinalis = async function(id) {
+            if(confirm("Apakah Anda yakin ingin menghapus data finalis ini?")) {
+                await remove(ref(db, `candidates/${id}`));
+            }
+        }
+
+        // REALTIME LISTENER PESERTA & VOTE
+        onValue(ref(db, 'participants'), async (snapshot) => {
             const tableBody = document.getElementById('listPesertaTable');
             tableBody.innerHTML = "";
             
             let totalDaftar = 0, totalHadir = 0, totalVote = 0;
-            let voteCounts = { "finalis-1": 0, "finalis-2": 0, "finalis-3": 0, "finalis-4": 0, "finalis-5": 0 };
+            let voteCounts = {};
+            
+            const candidateSnap = await get(ref(db, 'candidates'));
+            let candidateData = {};
+            if(candidateSnap.exists()) {
+                candidateData = candidateSnap.val();
+                Object.keys(candidateData).forEach(k => voteCounts[k] = 0);
+            }
+
             const logVoteTable = document.getElementById('logVoteTable');
             logVoteTable.innerHTML = "";
 
@@ -174,11 +270,13 @@
                             voteCounts[data.votedCandidateId]++;
                         }
 
+                        let candName = candidateData[data.votedCandidateId] ? candidateData[data.votedCandidateId].name : data.votedCandidateId;
+
                         let vRow = document.createElement('tr');
                         vRow.innerHTML = `
                             <td><strong style="color:var(--primary); font-family:monospace;">${code}</strong></td>
                             <td><strong>${data.name}</strong></td>
-                            <td><span class="badge badge-success">${data.votedCandidateId.toUpperCase().replace('-', ' ')}</span></td>
+                            <td><span class="badge badge-success">${candName}</span></td>
                             <td>
                                 <button class="btn-sm-del" onclick="hapusVote('${code}')">Batalkan Vote</button>
                             </td>
@@ -192,7 +290,7 @@
                         <td><strong>${data.name}</strong></td>
                         <td><span style="color:var(--text-muted);">${data.role || '-'}</span></td>
                         <td>${data.school}</td>
-                        <td>${data.isPresent ? '<span class="badge badge-success">✔ Hadir</span>' : '<span class="badge badge-warning">Belum</span>'}</td>
+                        <td>${data.isPresent ? '<span class="badge badge-success">Hadir</span>' : '<span class="badge badge-warning">Belum</span>'}</td>
                         <td>
                             <button class="btn-sm-edit" onclick="editPeserta('${code}', '${data.name}', '${data.role}', '${data.school}')">Edit</button>
                             <button class="btn-sm-del" onclick="hapusPeserta('${code}')">Hapus</button>
@@ -204,20 +302,35 @@
                 tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada peserta terdaftar.</td></tr>`;
             }
 
-            // Update Statistics & Progress Bar
+            // Stat & Table Vote Summary
             document.getElementById('statDaftar').innerText = totalDaftar;
             document.getElementById('statHadir').innerText = totalHadir;
             document.getElementById('statVote').innerText = totalVote;
 
-            for(let i=1; i<=5; i++) {
-                let count = voteCounts[`finalis-${i}`];
-                document.getElementById(`count-f${i}`).innerText = count;
-                let pct = totalVote > 0 ? (count / totalVote) * 100 : 0;
-                document.getElementById(`bar-f${i}`).style.width = pct + "%";
+            const summaryTable = document.getElementById('finalistVoteSummaryTable');
+            summaryTable.innerHTML = "";
+
+            if(Object.keys(candidateData).length === 0) {
+                summaryTable.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Belum ada data finalis.</td></tr>`;
+            } else {
+                Object.keys(candidateData).forEach(candId => {
+                    let count = voteCounts[candId] || 0;
+                    let pct = totalVote > 0 ? ((count / totalVote) * 100).toFixed(1) : 0;
+                    let row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${candidateData[candId].name}</strong> <br><small style="color:var(--text-muted);">${candidateData[candId].school}</small></td>
+                        <td><strong>${count}</strong> Suara</td>
+                        <td>
+                            <div style="font-size:12px; font-weight:600; margin-bottom:2px;">${pct}%</div>
+                            <div class="vote-bar-bg"><div class="vote-bar-fill" style="width: ${pct}%;"></div></div>
+                        </td>
+                    `;
+                    summaryTable.appendChild(row);
+                });
             }
         });
 
-        // EDIT & HAPUS
+        // EDIT & HAPUS PESERTA
         window.editPeserta = async function(code, oldName, oldRole, oldSchool) {
             let newName = prompt("Ubah Nama Peserta:", oldName);
             if(newName === null) return;
@@ -233,7 +346,7 @@
             }
         }
 
-        // TAB 3: LIVE ABSEN
+        // TAB LIVE ABSEN
         window.verifikasiAbsen = async function() {
             let code = document.getElementById('absenCode').value.trim().toUpperCase();
             let msgBox = document.getElementById('absenMsg');
@@ -242,16 +355,16 @@
 
             const snapshot = await get(ref(db, `participants/${code}`));
             if(!snapshot.exists()) {
-                msgBox.innerHTML = `<div style="background:#fee2e2; color:#991b1b; padding:12px; border-radius:10px; font-weight:600;">❌ Kode ${code} TIDAK DITEMUKAN!</div>`;
+                msgBox.innerHTML = `<div style="background:#fee2e2; color:#991b1b; padding:12px; border-radius:8px; font-weight:600;">Kode ${code} tidak ditemukan. Sila daftarkan terlebih dahulu.</div>`;
                 return;
             }
 
             await update(ref(db, `participants/${code}`), { isPresent: true });
-            msgBox.innerHTML = `<div style="background:#d1fae5; color:#065f46; padding:12px; border-radius:10px; font-weight:600;">✅ VERIFIKASI BERHASIL! ${snapshot.val().name} (${snapshot.val().school}) dinyatakan HADIR.</div>`;
+            msgBox.innerHTML = `<div style="background:#d1fae5; color:#065f46; padding:12px; border-radius:8px; font-weight:600;">Verifikasi Berhasil: ${snapshot.val().name} (${snapshot.val().school}) dinyatakan Hadir.</div>`;
             document.getElementById('absenCode').value = "";
         }
 
-        // TAB 4: BATAL VOTE
+        // BATAL VOTE
         window.hapusVote = async function(code) {
             if(confirm(`Batalkan vote milik ${code}?`)) {
                 await update(ref(db, `participants/${code}`), { hasVoted: false, votedCandidateId: null });
@@ -265,23 +378,24 @@
         <!-- HEADER BANNER -->
         <div class="header-banner">
             <div class="header-title">
-                <h2>⚛️ Open House Fisika 2026</h2>
-                <p>Dashboard Panel Registrasi & Monitoring Live Vote</p>
+                <h2>Open House Fisika 2026</h2>
+                <p>Panel Registrasi & Monitoring Live Vote Exhibition</p>
             </div>
-            <div class="header-badge">Admin System v2.0</div>
+            <div class="header-badge">Admin System</div>
         </div>
 
         <!-- NAVBAR TABS -->
         <div class="nav-tabs">
-            <button class="nav-tab active" onclick="openTab('tab-daftar', event)">➕ Daftarkan Peserta</button>
-            <button class="nav-tab" onclick="openTab('tab-peserta', event)">📋 Peserta Terdaftar</button>
-            <button class="nav-tab" onclick="openTab('tab-absen', event)">📍 Live Absen (Hari-H)</button>
-            <button class="nav-tab" onclick="openTab('tab-vote', event)">📊 Live Hasil Vote</button>
+            <button class="nav-tab active" onclick="openTab('tab-daftar', event)">Daftarkan Peserta</button>
+            <button class="nav-tab" onclick="openTab('tab-peserta', event)">Peserta Terdaftar</button>
+            <button class="nav-tab" onclick="openTab('tab-absen', event)">Live Absen Hari-H</button>
+            <button class="nav-tab" onclick="openTab('tab-finalis', event)">Kelola Finalis</button>
+            <button class="nav-tab" onclick="openTab('tab-vote', event)">Live Hasil Vote</button>
         </div>
 
         <!-- TAB 1: DAFTARKAN PESERTA -->
         <div id="tab-daftar" class="tab-content active">
-            <h3>📝 Form Pendaftaran Awal (RSVP)</h3>
+            <h3>Form Pendaftaran Awal (RSVP)</h3>
             <div class="form-group">
                 <label>Nama Lengkap Pengunjung</label>
                 <input type="text" id="regName" placeholder="Masukkan nama panjang...">
@@ -299,12 +413,12 @@
                     <input type="text" id="regSchool" placeholder="Contoh: SMAN 1 Surabaya">
                 </div>
             </div>
-            <button class="btn btn-primary" onclick="daftarkanPeserta()">✨ Simpan & Buat Kode Akses</button>
+            <button class="btn btn-primary" onclick="daftarkanPeserta()">Simpan dan Buat Kode Akses</button>
         </div>
 
         <!-- TAB 2: PESERTA TERDAFTAR -->
         <div id="tab-peserta" class="tab-content">
-            <h3>👥 Daftar Seluruh Peserta</h3>
+            <h3>Daftar Seluruh Peserta</h3>
             <div class="table-responsive">
                 <table>
                     <thead>
@@ -324,18 +438,41 @@
 
         <!-- TAB 3: LIVE ABSEN PESERTA -->
         <div id="tab-absen" class="tab-content">
-            <h3>🎟️ Verifikasi Kehadiran Pengunjung</h3>
-            <p style="color:var(--text-muted); font-size:14px; margin-bottom:20px;">Masukkan kode akses milik pengunjung saat penukaran tiket offline di lokasi:</p>
+            <h3>Verifikasi Kehadiran Pengunjung</h3>
+            <p style="color:var(--text-muted); font-size:14px; margin-bottom:20px;">Masukkan kode akses milik pengunjung saat registrasi di tempat:</p>
             <div class="form-group">
                 <input type="text" id="absenCode" placeholder="Ketik Kode (Contoh: OH01)" style="text-transform:uppercase; font-size:18px; letter-spacing:1px; text-align:center;">
             </div>
-            <button class="btn btn-success" onclick="verifikasiAbsen()">✔ Confirm Kehadiran & Aktifkan Voting</button>
+            <button class="btn btn-success" onclick="verifikasiAbsen()">Konfirmasi Kehadiran dan Aktifkan Voting</button>
             <div id="absenMsg" style="margin-top:20px;"></div>
         </div>
 
-        <!-- TAB 4: LIVE HASIL VOTE -->
+        <!-- TAB 4: KELOLA FINALIS -->
+        <div id="tab-finalis" class="tab-content">
+            <h3>Input Data Finalis Exhibition</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Nama Kelompok / Finalis</label>
+                    <input type="text" id="finName" placeholder="Contoh: Tim Exhibition A">
+                </div>
+                <div class="form-group">
+                    <label>Asal Sekolah / Instansi</label>
+                    <input type="text" id="finSchool" placeholder="Contoh: SMAN 1 Surabaya">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Upload Foto Kelompok</label>
+                <input type="file" id="finPhoto" accept="image/*">
+            </div>
+            <button class="btn btn-primary" onclick="tambahFinalis()">Tambah Data Finalis</button>
+
+            <h3 style="margin-top: 35px;">Daftar Finalis Aktif</h3>
+            <div class="finalist-grid" id="finalistDisplayGrid"></div>
+        </div>
+
+        <!-- TAB 5: LIVE HASIL VOTE -->
         <div id="tab-vote" class="tab-content">
-            <h3>📈 Monitoring Perolehan Suara</h3>
+            <h3>Monitoring Perolehan Suara</h3>
             
             <div class="stats-grid">
                 <div class="stat-card"><h4 id="statDaftar">0</h4><p>Total Terdaftar</p></div>
@@ -347,35 +484,9 @@
             <div class="table-responsive">
                 <table>
                     <thead>
-                        <tr><th>Finalis</th><th style="width:120px;">Jumlah Suara</th><th>Persentase Visual</th></tr>
+                        <tr><th>Finalis / Kelompok</th><th style="width:140px;">Jumlah Suara</th><th>Persentase Visual</th></tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>Finalis 1</strong></td>
-                            <td id="count-f1">0</td>
-                            <td><div class="vote-bar-bg"><div id="bar-f1" class="vote-bar-fill"></div></div></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Finalis 2</strong></td>
-                            <td id="count-f2">0</td>
-                            <td><div class="vote-bar-bg"><div id="bar-f2" class="vote-bar-fill"></div></div></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Finalis 3</strong></td>
-                            <td id="count-f3">0</td>
-                            <td><div class="vote-bar-bg"><div id="bar-f3" class="vote-bar-fill"></div></div></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Finalis 4</strong></td>
-                            <td id="count-f4">0</td>
-                            <td><div class="vote-bar-bg"><div id="bar-f4" class="vote-bar-fill"></div></div></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Finalis 5</strong></td>
-                            <td id="count-f5">0</td>
-                            <td><div class="vote-bar-bg"><div id="bar-f5" class="vote-bar-fill"></div></div></td>
-                        </tr>
-                    </tbody>
+                    <tbody id="finalistVoteSummaryTable"></tbody>
                 </table>
             </div>
 
