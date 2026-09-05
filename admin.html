@@ -310,7 +310,7 @@
                         let email = row["Email"] || row["email"] || row["E-mail"] || "-";
                         let role = row["Status"] || row["status"] || row["Peran"] || "Siswa";
                         let school = row["Asal Instansi"] || row["Asal Sekolah"] || row["Instansi"] || "-";
-                        let isPresent = false; // Kehadiran diatur manual atau via centang awal sesuai ketentuan
+                        let isPresent = false;
 
                         updates[`participants/${code}`] = {
                             name: name.toString().trim(), email: email.toString().trim(), role: role.toString().trim(),
@@ -366,8 +366,9 @@
                 `📅 Tanggal: 31 Oktober 2026\n` +
                 `📍 Lokasi: Departemen Fisika ITS\n\n` +
                 `Berikut adalah KODE AKSES unikmu untuk voting exhibition:\n` +
-                `📌 KODE AKSES : [ ${code} ]\n` +
-                'Website Vote : its.id/m/VotePSIC (Atau Scan Qr di Tempat)\n\n` +
+                `📌 KODE AKSES : [ ${code} ]\n\n` +
+                `🔗 Link Vote Exhibition / Scan QR di Tempat:\n` +
+                `its.id/m/VotePSIC\n\n` +
                 `⚠️ PERHATIAN:\n` +
                 `1. Kode ini TIDAK DAPAT DIGUNAKAN sebelum kamu melakukan registrasi atau check-in di meja panitia saat hari-H di Departemen Fisika ITS.\n` +
                 `2. Jangan menyebarluaskan kode akses ini kepada siapa pun karena hanya berlaku untuk satu (1) kali penggunaan.\n\n` +
@@ -403,7 +404,6 @@
                 });
                 await update(ref(db), updates);
 
-                // Open first mailto as primary trigger and notify
                 let first = unSentList[0];
                 const subject = encodeURIComponent("✨ Tiket & Kode Akses Resmi - Open House Fisika ITS 2026");
                 const body = encodeURIComponent(
@@ -413,6 +413,8 @@
                     `📍 Lokasi: Departemen Fisika ITS\n\n` +
                     `Berikut adalah KODE AKSES unikmu untuk voting exhibition:\n` +
                     `📌 KODE AKSES : [ ${first.code} ]\n\n` +
+                    `🔗 Link Vote Exhibition / Scan QR di Tempat:\n` +
+                    `its.id/m/VotePSIC\n\n` +
                     `⚠️ PERHATIAN:\n` +
                     `1. Kode ini TIDAK DAPAT DIGUNAKAN sebelum kamu melakukan registrasi atau check-in di meja panitia saat hari-H di Departemen Fisika ITS.\n` +
                     `2. Jangan menyebarluaskan kode akses ini kepada siapa pun karena hanya berlaku untuk satu (1) kali penggunaan.\n\n` +
@@ -644,7 +646,7 @@
         window.konfirmasiAbsen = async function() {
             if(!currentAbsenCode) return;
             await update(ref(db, `participants/${currentAbsenCode}`), { isPresent: true });
-            document.getElementById('absenMsg').innerHTML = `<div style="background:#d1fae5; color:#065f46; padding:16px; border-radius:12px; font-weight:600;"><i class="fas fa-check-circle"></i> Verifikasi Berhasil: Peserta ${currentAbsenCode} Siap Vote.</div>`;
+            document.getElementById('absenMsg').innerHTML = `<div style="background:#d1fae5; color:#065f46; padding:16px; border-radius:12px; font-weight:600;"><i class="fas fa-check-circle"></i> Verifikasi Berhasil: Peserta ${currentAbsenCode} Siap Vote. Silakan akses <a href="http://its.id/m/VotePSIC" target="_blank" style="color:var(--primary); text-decoration:underline;">its.id/m/VotePSIC</a> atau scan QR di lokasi.</div>`;
             document.getElementById('prevStatusBadge').className = "badge badge-success"; document.getElementById('prevStatusBadge').innerHTML = "<i class='fas fa-check-double'></i> Sudah Hadir & Aktif";
             document.getElementById('btnKonfirmasiAbsen').classList.add('hidden'); document.getElementById('btnBatalAbsen').classList.remove('hidden');
         }
