@@ -65,6 +65,919 @@
         .upload-box { border: 2px dashed var(--primary); padding: 20px; border-radius: 12px; text-align: center; margin-top: 30px; background: #eff6ff; }
         .upload-box h4 { margin-top: 0; margin-bottom: 8px; color: var(--primary); font-size: 16px; font-weight: 700; }
 
+        /* CONTROLS (SEARCH & SORT) */
+        .controls-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); }
+        .search-box { flex: 1; min-width: 240px; }
+        .sort-box { width: 220px; }
+
+        /* BUTTONS */
+        .btn { padding: 11px 18px; border-radius: 8px; border: none; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+        .btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-hover); }
+        .btn-success { background: var(--success); color: white; } .btn-success:hover { filter: brightness(0.9); }
+        .btn-warning { background: #f59e0b; color: white; } .btn-warning:hover { filter: brightness(0.9); }
+        .btn-danger { background: var(--danger); color: white; } .btn-danger:hover { filter: brightness(0.9); }
+        .btn-sm-edit { background: #fef3c7; color: #92400e; border: none; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
+        .btn-sm-del { background: #fee2e2; color: #991b1b; border: none; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
+        .btn-sm-mail { background: #e0f2fe; color: #0369a1; border: none; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
+
+        /* TABLES */
+        .table-responsive { overflow-x: auto; margin-top: 15px; border-radius: 10px; border: 1px solid var(--border-color); }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+        th { background: #f1f5f9; padding: 12px 14px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color); }
+        td { padding: 12px 14px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: #f8fafc; }
+
+        /* BADGES */
+        .badge { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-info { background: #e0f2fe; color: #0369a1; }
+        .badge-secondary { background: #f1f5f9; color: #64748b; }
+
+        /* DETAIL CARD ABSEN */
+        .preview-card { background: #f8fafc; border: 1.5px solid var(--border-color); border-radius: 12px; padding: 20px; margin-top: 20px; text-align: left; }
+        .preview-row { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding: 10px 0; font-size: 14px; }
+        .preview-row:last-child { border-bottom: none; }
+        .preview-label { color: var(--text-muted); font-weight: 600; }
+        .preview-value { font-weight: 700; color: var(--text-main); }
+
+        /* FINALIST CARDS GRID */
+        .finalist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 20px; }
+        .finalist-card { border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; background: white; text-align: center; }
+        .finalist-img { width: 100%; height: 140px; object-fit: cover; border-radius: 8px; background: #e2e8f0; margin-bottom: 10px; }
+        .finalist-name { font-weight: 700; font-size: 15px; margin: 4px 0; color: var(--text-main); }
+        .finalist-school { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+
+        /* STATS GRID */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: #f8fafc; border: 1px solid var(--border-color); padding: 18px; border-radius: 12px; text-align: center; }
+        .stat-card h4 { margin: 0; font-size: 28px; font-weight: 700; color: var(--primary); }
+        .stat-card p { margin: 4px 0 0 0; font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+
+        /* PROGRESS VOTE */
+        .vote-bar-bg { background: #e2e8f0; height: 8px; border-radius: 8px; overflow: hidden; margin-top: 6px; }
+        .vote-bar-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.4s ease; }
+
+        /* CUSTOM MODAL (Tengah Layar) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-box {
+            background: white; width: 90%; max-width: 460px; border-radius: 16px;
+            padding: 28px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            transform: translateY(20px); transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-box { transform: translateY(0); }
+        .modal-icon {
+            width: 56px; height: 56px; background: #fee2e2; color: #ef4444; border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; margin: 0 auto 16px auto;
+        }
+        .modal-title { font-size: 20px; font-weight: 700; color: var(--text-main); margin: 0 0 10px 0; }
+        .modal-text { font-size: 14px; color: var(--text-muted); margin: 0 0 24px 0; line-height: 1.6; }
+        .modal-actions { display: flex; gap: 12px; }
+        .modal-actions button { flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-cancel { background: #f1f5f9; color: #475569; } .btn-cancel:hover { background: #e2e8f0; }
+        .btn-confirm { background: #ef4444; color: white; } .btn-confirm:hover { background: #b91c1c; }
+
+        .hidden { display: none !important; }
+        .flex-buttons { display: flex; gap: 12px; margin-top: 20px; }
+    </style>
+
+    <!-- Firebase SDK Modular -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, get, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // PASSWORD PROTEKSI HALAMAN ADMIN (Ubah password di sini jika perlu)
+        const ADMIN_PASSWORD = "fisikaits2026";
+
+        function checkAdminAuth() {
+            let userPass = prompt("🔐 Masukkan Password Admin untuk mengakses halaman ini:");
+            if (userPass !== ADMIN_PASSWORD) {
+                alert("Password salah! Akses ditolak.");
+                document.body.innerHTML = "<h2 style='text-align:center; margin-top:100px; color:#ef4444;'>Akses Ditolak. Password Administrator Salah.</h2>";
+                throw new Error("Unauthorized");
+            }
+        }
+        checkAdminAuth();
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyACSezxOlaZvNNUsxmLi8mjH85q878k_tE",
+            authDomain: "open-house-efb30.firebaseapp.com",
+            databaseURL: "https://open-house-efb30-default-rtdb.firebaseio.com",
+            projectId: "open-house-efb30",
+            storageBucket: "open-house-efb30.firebasestorage.app",
+            messagingSenderId: "115256004823",
+            appId: "1:115256004823:web:e2ae984236905bface6092"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let currentAbsenCode = "";
+        let globalParticipantsData = [];
+
+        let confirmActionCallback = null;
+        window.bukaModalKonfirmasi = function(pesan, aksi) {
+            document.getElementById('modalPesan').innerText = pesan;
+            confirmActionCallback = aksi;
+            document.getElementById('customModal').classList.add('active');
+        }
+
+        window.tutupModal = function() {
+            document.getElementById('customModal').classList.remove('active');
+            confirmActionCallback = null;
+        }
+
+        document.getElementById('btnEksekusiModal').addEventListener('click', async function() {
+            if (confirmActionCallback) await confirmActionCallback();
+            tutupModal();
+        });
+
+        window.openTab = function(tabName, evt) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            if(evt) evt.currentTarget.classList.add('active');
+        }
+
+        // Generator Kode Acak 4 Karakter Alfanumerik Unik
+        const CHAR_POOL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        function generateRandom4Char() {
+            let result = '';
+            for (let i = 0; i < 4; i++) {
+                result += CHAR_POOL.charAt(Math.floor(Math.random() * CHAR_POOL.length));
+            }
+            return result;
+        }
+
+        async function getUniqueRandomCode() {
+            const snapshot = await get(ref(db, 'participants'));
+            let existingCodes = new Set();
+            if (snapshot.exists()) {
+                snapshot.forEach((child) => existingCodes.add(child.key));
+            }
+            let code;
+            do {
+                code = generateRandom4Char();
+            } while (existingCodes.has(code));
+            return code;
+        }
+
+        window.daftarkanPeserta = async function() {
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const role = document.getElementById('regRole').value.trim();
+            const school = document.getElementById('regSchool').value.trim();
+            const isPresent = document.getElementById('regIsPresent').checked || role.toLowerCase().includes("panitia");
+
+            if (!name) { alert("Sila isi nama lengkap peserta!"); return; }
+
+            let code = await getUniqueRandomCode();
+            let timestamp = Date.now();
+
+            await set(ref(db, `participants/${code}`), {
+                name: name,
+                email: email || "-",
+                role: role || "Siswa",
+                school: school || "-",
+                isPresent: isPresent,
+                hasVoted: false,
+                votedCandidateId: null,
+                emailSent: false,
+                createdAt: timestamp
+            });
+
+            alert(`Berhasil Terdaftar.\n\nKODE AKSES ACAK: ${code}\nStatus Kehadiran: ${isPresent ? 'Aktif (Hadir)' : 'Belum Hadir'}`);
+            document.getElementById('regName').value = "";
+            document.getElementById('regEmail').value = "";
+            document.getElementById('regSchool').value = "";
+            document.getElementById('regIsPresent').checked = false;
+        }
+
+        window.uploadExcel = async function() {
+            const fileInput = document.getElementById('excelFile');
+            if (fileInput.files.length === 0) { alert("Pilih file Excel atau CSV terlebih dahulu!"); return; }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                if (jsonData.length === 0) { alert("File Excel kosong atau format tidak sesuai!"); return; }
+                
+                bukaModalKonfirmasi(`Ditemukan ${jsonData.length} baris data. Yakin ingin mengunggah semuanya ke sistem dengan kode acak?`, async () => {
+                    const snapshot = await get(ref(db, 'participants'));
+                    let usedCodes = new Set();
+                    if (snapshot.exists()) {
+                        snapshot.forEach((child) => usedCodes.add(child.key));
+                    }
+
+                    let updates = {};
+                    let successCount = 0;
+                    let baseTime = Date.now();
+
+                    jsonData.forEach((row, index) => {
+                        let name = row["Nama"] || row["nama"] || row["Nama Lengkap"] || row["Name"];
+                        if (!name) return;
+
+                        let code;
+                        do {
+                            code = generateRandom4Char();
+                        } while (usedCodes.has(code));
+                        usedCodes.add(code);
+
+                        let email = row["Email"] || row["email"] || row["E-mail"] || "-";
+                        let role = row["Status"] || row["status"] || row["Peran"] || "Siswa";
+                        let school = row["Asal Instansi"] || row["Asal Sekolah"] || row["Instansi"] || "-";
+                        
+                        let isPresent = role.toString().toLowerCase().includes("panitia");
+
+                        updates[`participants/${code}`] = {
+                            name: name.toString().trim(),
+                            email: email.toString().trim(),
+                            role: role.toString().trim(),
+                            school: school.toString().trim(),
+                            isPresent: isPresent,
+                            hasVoted: false,
+                            votedCandidateId: null,
+                            emailSent: false,
+                            createdAt: baseTime + index // Urutan waktu unggah
+                        };
+                        successCount++;
+                    });
+
+                    if (successCount > 0) {
+                        await update(ref(db), updates);
+                        alert(`Upload Berhasil! ${successCount} peserta telah ditambahkan dengan kode acak 4 karakter dan akun Panitia langsung diaktifkan.`);
+                        fileInput.value = "";
+                    } else {
+                        alert("Gagal memproses. Pastikan tabel memiliki kolom 'Nama'.");
+                    }
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // FUNGSI AKTIFKAN SEMUA PANITIA SEKALIGUS
+        window.aktifkanSemuaPanitia = async function() {
+            bukaModalKonfirmasi("Aktifkan kehadiran seluruh peserta yang berstatus Panitia secara massal sekarang?", async () => {
+                const snapshot = await get(ref(db, 'participants'));
+                if (!snapshot.exists()) {
+                    alert("Tidak ada data peserta.");
+                    return;
+                }
+                let updates = {};
+                let count = 0;
+                snapshot.forEach((child) => {
+                    let code = child.key;
+                    let data = child.val();
+                    let role = (data.role || "").toLowerCase();
+                    if (role.includes("panitia")) {
+                        updates[`participants/${code}/isPresent`] = true;
+                        count++;
+                    }
+                });
+                if (count > 0) {
+                    await update(ref(db), updates);
+                    alert(`Berhasil! ${count} akun panitia telah diaktifkan secara otomatis.`);
+                } else {
+                    alert("Tidak ditemukan data dengan status Panitia.");
+                }
+            });
+        }
+
+        window.exportKeExcel = async function() {
+            const snapshot = await get(ref(db, 'participants'));
+            if (!snapshot.exists()) {
+                alert("Tidak ada data peserta untuk diunduh!"); return;
+            }
+            
+            let dataArr = [];
+            snapshot.forEach((child) => {
+                let code = child.key;
+                let val = child.val();
+                dataArr.push({
+                    "Kode Akses": code,
+                    "Nama Lengkap": val.name,
+                    "Email": val.email || "-",
+                    "Status/Peran": val.role,
+                    "Asal Instansi": val.school,
+                    "Status Email": val.emailSent ? "Sudah Dikirim" : "Belum",
+                    "Kehadiran Hari H": val.isPresent ? "Hadir" : "Belum Hadir",
+                    "Status Voting": val.hasVoted ? "Sudah Vote" : "Belum Vote"
+                });
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(dataArr);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Data_Peserta");
+            
+            let date = new Date();
+            let fileName = `Data_Peserta_OpenHouse_${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}.xlsx`;
+            XLSX.writeFile(workbook, fileName);
+        }
+
+        window.hapusSemuaPeserta = function() {
+            bukaModalKonfirmasi("PERINGATAN KERAS! Anda akan MENGHAPUS SELURUH DATA PESERTA yang terdaftar. Data yang terhapus tidak dapat dikembalikan. Lanjutkan?", async () => {
+                await remove(ref(db, 'participants'));
+                alert("Seluruh data peserta telah berhasil dikosongkan.");
+            });
+        }
+
+        window.kirimEmailKode = async function(code, name, email) {
+            if (!email || email === "-" || email.trim() === "") {
+                alert("Peserta ini belum memiliki alamat email yang valid!");
+                return;
+            }
+            
+            const subject = encodeURIComponent("✨ Tiket & Kode Akses Resmi - Open House Fisika ITS 2026");
+            const body = encodeURIComponent(`Halo ${name},\n\nTerima kasih telah mendaftarkan diri pada acara Open House Fisika ITS 2026 yang akan diselenggarakan pada:\n\n📅 Tanggal: 31 Oktober 2026\n📍 Lokasi: Departemen Fisika ITS\n\nBerikut adalah KODE AKSES unikmu untuk presensi kehadiran dan voting pameran karya:\n\n📌 KODE AKSES : [ ${code} ]\n\n⚠️ PERINGATAN PENTING:\n- JANGAN SEBARKAN atau tunjukkan kode akses ini kepada orang lain.\n- Kode ini bersifat rahasia dan HANYA BISA DIGUNAKAN 1 KALI untuk proses presensi dan voting.\n\nPetunjuk Kehadiran:\n1. WAJIB MEMBAWA KARTU IDENTITAS (Kartu Pelajar/KTP/Identitas lainnya) untuk verifikasi.\n2. Datang langsung ke meja registrasi di Departemen Fisika ITS.\n3. Tunjukkan kartu identitas beserta email atau kode akses ini kepada panitia.\n4. Setelah dikonfirmasi hadir, kamu dapat menggunakan hak suara (voting) untuk memilih kelompok finalis favoritmu.\n\nSimpan email ini baik-baik ya. Sampai jumpa di lokasi!\n\nSalam hangat,\nPanitia Open House Fisika ITS 2026`);
+            
+            await update(ref(db, `participants/${code}`), { emailSent: true });
+
+            window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+        }
+
+        window.editPeserta = function(code, name, email, emailSent, role, school) {
+            document.getElementById('editCodeHidden').value = code;
+            document.getElementById('editName').value = name;
+            document.getElementById('editEmail').value = email;
+            document.getElementById('editEmailSent').value = emailSent ? "true" : "false";
+            document.getElementById('editRole').value = role;
+            document.getElementById('editSchool').value = school;
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        window.tutupEditModal = function() {
+            document.getElementById('editModal').classList.remove('active');
+        }
+
+        window.simpanEditPeserta = async function() {
+            let code = document.getElementById('editCodeHidden').value;
+            let name = document.getElementById('editName').value.trim();
+            let email = document.getElementById('editEmail').value.trim();
+            let emailSent = document.getElementById('editEmailSent').value === "true";
+            let role = document.getElementById('editRole').value.trim();
+            let school = document.getElementById('editSchool').value.trim();
+
+            if (!name) { alert("Nama lengkap wajib diisi!"); return; }
+
+            await update(ref(db, `participants/${code}`), {
+                name: name,
+                email: email || "-",
+                emailSent: emailSent,
+                role: role || "-",
+                school: school || "-"
+            });
+
+            alert("Data peserta berhasil diperbarui!");
+            tutupEditModal();
+        }
+
+        window.tambahFinalis = async function() {
+            const name = document.getElementById('finName').value.trim();
+            const school = document.getElementById('finSchool').value.trim();
+            const fileInput = document.getElementById('finPhoto');
+
+            if (!name || !school) { alert("Sila isi Nama Kelompok dan Asal Sekolah!"); return; }
+            if (fileInput.files.length === 0) { alert("Pilih foto kelompok terlebih dahulu!"); return; }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = async function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width; let height = img.height; const max_size = 450;
+                    if (width > height) { if (width > max_size) { height *= max_size / width; width = max_size; } } 
+                    else { if (height > max_size) { width *= max_size / height; height = max_size; } }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+                    const photoBase64 = canvas.toDataURL('image/jpeg', 0.75);
+                    const candidateId = "finalis-" + Date.now();
+
+                    await set(ref(db, `candidates/${candidateId}`), { name: name, school: school, photo: photoBase64 });
+                    alert("Data Finalis Berhasil Ditambahkan!");
+                    document.getElementById('finName').value = ""; document.getElementById('finSchool').value = ""; fileInput.value = "";
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        onValue(ref(db, 'candidates'), (snapshot) => {
+            const grid = document.getElementById('finalistDisplayGrid');
+            grid.innerHTML = "";
+            if (!snapshot.exists()) { grid.innerHTML = `<p style="color:var(--text-muted); grid-column: 1/-1;">Belum ada data finalis.</p>`; return; }
+
+            snapshot.forEach((child) => {
+                let id = child.key; let data = child.val();
+                let card = document.createElement('div'); card.className = "finalist-card";
+                card.innerHTML = `
+                    <img src="${data.photo}" class="finalist-img" alt="Foto">
+                    <div class="finalist-name">${data.name}</div>
+                    <div class="finalist-school">${data.school}</div>
+                    <button class="btn-sm-del" onclick="hapusFinalis('${id}')">Hapus Finalis</button>
+                `;
+                grid.appendChild(card);
+            });
+        });
+
+        window.hapusFinalis = function(id) {
+            bukaModalKonfirmasi("Apakah Anda yakin ingin menghapus data finalis ini dari sistem voting?", async () => {
+                await remove(ref(db, `candidates/${id}`));
+            });
+        }
+
+        // FUNGSI RENDER TABEL UTAMA DENGAN FILTER PENCARIAN & SORTING
+        window.renderParticipantsTable = async function() {
+            const tableBody = document.getElementById('listPesertaTable');
+            tableBody.innerHTML = "";
+            let totalDaftar = 0, totalHadir = 0, totalVote = 0; let voteCounts = {};
+            
+            const candidateSnap = await get(ref(db, 'candidates'));
+            let candidateData = {};
+            if(candidateSnap.exists()) {
+                candidateData = candidateSnap.val();
+                Object.keys(candidateData).forEach(k => voteCounts[k] = 0);
+            }
+
+            const logVoteTable = document.getElementById('logVoteTable');
+            logVoteTable.innerHTML = "";
+
+            if (globalParticipantsData.length > 0) {
+                let searchQuery = document.getElementById('searchParticipant').value.toLowerCase();
+                let sortBy = document.getElementById('sortParticipant').value;
+
+                // Filter Pencarian
+                let filtered = globalParticipantsData.filter(item => {
+                    return item.code.toLowerCase().includes(searchQuery) ||
+                           item.name.toLowerCase().includes(searchQuery) ||
+                           item.email.toLowerCase().includes(searchQuery) ||
+                           item.role.toLowerCase().includes(searchQuery) ||
+                           item.school.toLowerCase().includes(searchQuery);
+                });
+
+                // Sorting
+                filtered.sort((a, b) => {
+                    if (sortBy === 'newest') {
+                        return (b.createdAt || 0) - (a.createdAt || 0);
+                    } else if (sortBy === 'oldest') {
+                        return (a.createdAt || 0) - (b.createdAt || 0);
+                    } else if (sortBy === 'name') {
+                        return a.name.localeCompare(b.name);
+                    } else if (sortBy === 'email_sent') {
+                        return (b.emailSent === true) - (a.emailSent === true);
+                    } else if (sortBy === 'email_unsent') {
+                        return (a.emailSent === true) - (b.emailSent === true);
+                    }
+                    return 0;
+                });
+
+                let no = 1;
+                globalParticipantsData.forEach(data => {
+                    totalDaftar++;
+                    if(data.isPresent) totalHadir++;
+                    if(data.hasVoted) {
+                        totalVote++;
+                        if(voteCounts[data.votedCandidateId] !== undefined) voteCounts[data.votedCandidateId]++;
+                        let candName = candidateData[data.votedCandidateId] ? candidateData[data.votedCandidateId].name : data.votedCandidateId;
+                        let vRow = document.createElement('tr');
+                        vRow.innerHTML = `
+                            <td><strong style="color:var(--primary); font-family:monospace;">${data.code}</strong></td>
+                            <td><strong>${data.name}</strong><br><small style="color:var(--text-muted);">${data.email || '-'}</small></td>
+                            <td><span class="badge badge-success">${candName}</span></td>
+                            <td><button class="btn-sm-del" onclick="hapusVote('${data.code}')">Batalkan Vote</button></td>
+                        `;
+                        logVoteTable.appendChild(vRow);
+                    }
+                });
+
+                if (filtered.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:20px;">Tidak ditemukan data yang sesuai dengan pencarian.</td></tr>`;
+                } else {
+                    filtered.forEach((data) => {
+                        let code = data.code;
+                        let emailStatusBadge = data.emailSent 
+                            ? '<span class="badge badge-success">Sudah Dikirim</span>' 
+                            : '<span class="badge badge-secondary">Belum</span>';
+
+                        let safeName = (data.name || '').replace(/'/g, "\\'");
+                        let safeEmail = (data.email || '').replace(/'/g, "\\'");
+                        let safeRole = (data.role || '').replace(/'/g, "\\'");
+                        let safeSchool = (data.school || '').replace(/'/g, "\\'");
+
+                        let row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td style="color:var(--text-muted); font-weight:600; text-align:center;">${no++}</td>
+                            <td><strong style="color:var(--primary); font-family:monospace; font-size:15px;">${code}</strong></td>
+                            <td><strong>${data.name}</strong></td>
+                            <td><a href="mailto:${data.email}" style="color:var(--primary); text-decoration:none;">${data.email || '-'}</a></td>
+                            <td style="text-align:center;">${emailStatusBadge}</td>
+                            <td><span style="color:var(--text-muted);">${data.role || '-'}</span></td>
+                            <td>${data.school}</td>
+                            <td>${data.isPresent ? '<span class="badge badge-success">Hadir</span>' : '<span class="badge badge-warning">Belum</span>'}</td>
+                            <td style="white-space: nowrap; display: flex; gap: 6px;">
+                                <button class="btn-sm-mail" onclick="kirimEmailKode('${code}', '${safeName}', '${safeEmail}')" title="Kirim Kode via Email">📧 Email</button>
+                                <button class="btn-sm-edit" onclick="editPeserta('${code}', '${safeName}', '${safeEmail}', ${data.emailSent ? true : false}, '${safeRole}', '${safeSchool}')">Edit</button>
+                                <button class="btn-sm-del" onclick="hapusPeserta('${code}')">Hapus</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                }
+            } else {
+                tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada peserta terdaftar.</td></tr>`;
+            }
+
+            document.getElementById('statDaftar').innerText = totalDaftar;
+            document.getElementById('statHadir').innerText = totalHadir;
+            document.getElementById('statVote').innerText = totalVote;
+
+            let pctHadir = totalDaftar > 0 ? ((totalHadir / totalDaftar) * 100).toFixed(1) : 0;
+            const rekapDiv = document.getElementById('rekapKehadiranBar');
+            if(rekapDiv) {
+                rekapDiv.innerHTML = `
+                    <div style="font-size:13px; font-weight:600; margin-bottom:4px; display:flex; justify-content:space-between;">
+                        <span>Persentase Kehadiran/Aktivasi</span>
+                        <span>${totalHadir} dari ${totalDaftar} Peserta (${pctHadir}%)</span>
+                    </div>
+                    <div class="vote-bar-bg"><div class="vote-bar-fill" style="width: ${pctHadir}%; background: var(--success);"></div></div>
+                `;
+            }
+
+            const summaryTable = document.getElementById('finalistVoteSummaryTable');
+            summaryTable.innerHTML = "";
+            if(Object.keys(candidateData).length === 0) {
+                summaryTable.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Belum ada data finalis.</td></tr>`;
+            } else {
+                Object.keys(candidateData).forEach(candId => {
+                    let count = voteCounts[candId] || 0;
+                    let pct = totalVote > 0 ? ((count / totalVote) * 100).toFixed(1) : 0;
+                    let row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${candidateData[candId].name}</strong> <br><small style="color:var(--text-muted);">${candidateData[candId].school}</small></td>
+                        <td><strong>${count}</strong> Suara</td>
+                        <td>
+                            <div style="font-size:12px; font-weight:600; margin-bottom:2px;">${pct}%</div>
+                            <div class="vote-bar-bg"><div class="vote-bar-fill" style="width: ${pct}%;"></div></div>
+                        </td>
+                    `;
+                    summaryTable.appendChild(row);
+                });
+            }
+        }
+
+        onValue(ref(db, 'participants'), (snapshot) => {
+            globalParticipantsData = [];
+            if (snapshot.exists()) {
+                snapshot.forEach((child) => {
+                    globalParticipantsData.push({ code: child.key, ...child.val() });
+                });
+            }
+            renderParticipantsTable();
+        });
+
+        window.hapusPeserta = function(code) {
+            bukaModalKonfirmasi(`Hapus data peserta dengan kode ${code}?`, async () => {
+                await remove(ref(db, `participants/${code}`));
+            });
+        }
+
+        window.cekKodeAbsen = async function() {
+            let code = document.getElementById('absenCode').value.trim().toUpperCase();
+            let msgBox = document.getElementById('absenMsg');
+            let previewCard = document.getElementById('absenPreviewCard');
+            msgBox.innerHTML = ""; previewCard.classList.add('hidden');
+            if(!code) { alert("Masukkan kode peserta terlebih dahulu!"); return; }
+
+            const snapshot = await get(ref(db, `participants/${code}`));
+            if(!snapshot.exists()) {
+                msgBox.innerHTML = `<div style="background:#fee2e2; color:#991b1b; padding:12px; border-radius:8px; font-weight:600;">Kode ${code} tidak ditemukan.</div>`;
+                return;
+            }
+
+            currentAbsenCode = code; const data = snapshot.val();
+            document.getElementById('prevCode').innerText = code; document.getElementById('prevName').innerText = data.name || "-";
+            document.getElementById('prevEmail').innerText = data.email || "-";
+            document.getElementById('prevRole').innerText = data.role || "-"; document.getElementById('prevSchool').innerText = data.school || "-";
+
+            const badgeStatus = document.getElementById('prevStatusBadge');
+            const btnKonfirmasi = document.getElementById('btnKonfirmasiAbsen'); const btnBatal = document.getElementById('btnBatalAbsen');
+
+            if(data.isPresent) {
+                badgeStatus.className = "badge badge-success"; badgeStatus.innerText = "Sudah Hadir & Aktif";
+                btnKonfirmasi.classList.add('hidden'); btnBatal.classList.remove('hidden');
+            } else {
+                badgeStatus.className = "badge badge-warning"; badgeStatus.innerText = "Belum Hadir";
+                btnKonfirmasi.classList.remove('hidden'); btnBatal.classList.add('hidden');
+            }
+            previewCard.classList.remove('hidden');
+        }
+
+        window.konfirmasiAbsen = async function() {
+            if(!currentAbsenCode) return;
+            await update(ref(db, `participants/${currentAbsenCode}`), { isPresent: true });
+            document.getElementById('absenMsg').innerHTML = `<div style="background:#d1fae5; color:#065f46; padding:12px; border-radius:8px; font-weight:600;">Verifikasi Berhasil: Peserta ${currentAbsenCode} Siap Vote.</div>`;
+            document.getElementById('prevStatusBadge').className = "badge badge-success"; document.getElementById('prevStatusBadge').innerText = "Sudah Hadir & Aktif";
+            document.getElementById('btnKonfirmasiAbsen').classList.add('hidden'); document.getElementById('btnBatalAbsen').classList.remove('hidden');
+        }
+
+        window.batalkanAbsen = function() {
+            if(!currentAbsenCode) return;
+            bukaModalKonfirmasi(`Batalkan status hadir untuk peserta ${currentAbsenCode}?\n(Ini akan mengunci kembali akses voting)`, async () => {
+                await update(ref(db, `participants/${currentAbsenCode}`), { isPresent: false });
+                document.getElementById('absenMsg').innerHTML = `<div style="background:#fef3c7; color:#92400e; padding:12px; border-radius:8px; font-weight:600;">Status Hadir dibatalkan. Kode dikunci.</div>`;
+                document.getElementById('prevStatusBadge').className = "badge badge-warning"; document.getElementById('prevStatusBadge').innerText = "Belum Hadir";
+                document.getElementById('btnKonfirmasiAbsen').classList.remove('hidden'); document.getElementById('btnBatalAbsen').classList.add('hidden');
+            });
+        }
+
+        window.hapusVote = function(code) {
+            bukaModalKonfirmasi(`Cabut suara dari kode ${code}? Ini akan mengurangi perolehan suara finalis terkait.`, async () => {
+                await update(ref(db, `participants/${code}`), { hasVoted: false, votedCandidateId: null });
+            });
+        }
+    </script>
+</head>
+<body>
+
+    <div class="container">
+        <!-- HEADER BANNER -->
+        <div class="header-banner">
+            <div class="header-title">
+                <h2>Open House Fisika 2026</h2>
+                <p>Panel Registrasi & Monitoring Live Vote Exhibition</p>
+            </div>
+            <div class="header-badge">Admin System</div>
+        </div>
+
+        <!-- NAVBAR TABS -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="openTab('tab-daftar', event)">Daftarkan Peserta</button>
+            <button class="nav-tab" onclick="openTab('tab-peserta', event)">Peserta Terdaftar</button>
+            <button class="nav-tab" onclick="openTab('tab-absen', event)">Live Absen Hari-H</button>
+            <button class="nav-tab" onclick="openTab('tab-finalis', event)">Kelola Finalis</button>
+            <button class="nav-tab" onclick="openTab('tab-vote', event)">Live Hasil Vote</button>
+        </div>
+
+        <!-- TAB 1: DAFTARKAN PESERTA -->
+        <div id="tab-daftar" class="tab-content active">
+            <h3>Form Pendaftaran Awal (RSVP)</h3>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Nama Lengkap Pengunjung</label>
+                    <input type="text" id="regName" placeholder="Masukkan nama panjang...">
+                </div>
+                <div class="form-group">
+                    <label>Email Pengunjung</label>
+                    <input type="email" id="regEmail" placeholder="Contoh: nama@domain.com">
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Status Pengunjung</label>
+                    <input type="text" id="regRole" list="roleOptions" value="Siswa" placeholder="Pilih atau ketik status...">
+                    <datalist id="roleOptions"><option value="Siswa"><option value="Guru / Pendamping"><option value="Orang Tua Murid"><option value="Mahasiswa"><option value="Panitia"><option value="Umum"></datalist>
+                </div>
+                <div class="form-group">
+                    <label>Asal Sekolah / Instansi</label>
+                    <input type="text" id="regSchool" placeholder="Contoh: SMAN 1 Surabaya">
+                </div>
+            </div>
+            
+            <!-- Checkbox untuk langsung aktifkan kehadiran -->
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+                <input type="checkbox" id="regIsPresent" style="width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer;">
+                <label for="regIsPresent" style="margin: 0; cursor: pointer; color: var(--text-main); font-weight: 600;">Langsung Aktifkan Kehadiran (Untuk Panitia / Pengguna Khusus)</label>
+            </div>
+
+            <button class="btn btn-primary" onclick="daftarkanPeserta()">Simpan dan Buat Kode Akses Acak (Manual)</button>
+
+            <!-- UPLOAD EXCEL MASSAL -->
+            <div class="upload-box">
+                <h4>Upload Data Massal (Excel/CSV)</h4>
+                <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Pastikan kolom memiliki: <strong>Nama</strong>, <strong>Email</strong>, <strong>Status</strong>, dan <strong>Asal Instansi</strong>.<br><em>Catatan: Kode akan dibuat acak unik 4 karakter, dan baris "Panitia" langsung aktif (hadir).</em></p>
+                <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="margin-bottom: 15px;">
+                <button class="btn btn-success" onclick="uploadExcel()">Unggah Data Excel</button>
+            </div>
+        </div>
+
+        <!-- TAB 2: PESERTA TERDAFTAR -->
+        <div id="tab-peserta" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px; margin-bottom: 15px;">
+                <h3 style="margin: 0; border: none; padding: 0;">Daftar Seluruh Peserta</h3>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-warning" style="width: auto; color: white;" onclick="aktifkanSemuaPanitia()">⚡ Aktifkan Semua Panitia</button>
+                    <button class="btn btn-success" style="width: auto;" onclick="exportKeExcel()">📥 Download Excel</button>
+                    <button class="btn btn-danger" style="width: auto;" onclick="hapusSemuaPeserta()">🗑️ Hapus Semua Data</button>
+                </div>
+            </div>
+
+            <!-- KONTROL PENCARIAN & SORTING -->
+            <div class="controls-row">
+                <div class="search-box">
+                    <label>Pencarian Cepat</label>
+                    <input type="text" id="searchParticipant" placeholder="Cari nama, email, kode, peran, instansi..." oninput="renderParticipantsTable()">
+                </div>
+                <div class="sort-box">
+                    <label>Urutkan Berdasarkan</label>
+                    <select id="sortParticipant" onchange="renderParticipantsTable()">
+                        <option value="newest">Terbaru Diunggah</option>
+                        <option value="oldest">Terlama Diunggah</option>
+                        <option value="name">Nama (A - Z)</option>
+                        <option value="email_sent">Status Email: Sudah Dikirim</option>
+                        <option value="email_unsent">Status Email: Belum Terkirim</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:40px; text-align:center;">No</th>
+                            <th>Kode</th>
+                            <th>Nama Lengkap</th>
+                            <th>Email</th>
+                            <th style="text-align:center;">Status Email</th>
+                            <th>Status</th>
+                            <th>Asal Instansi</th>
+                            <th>Absen</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listPesertaTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 3: LIVE ABSEN PESERTA -->
+        <div id="tab-absen" class="tab-content">
+            <h3>Verifikasi Kehadiran Pengunjung</h3>
+            <p style="color:var(--text-muted); font-size:14px; margin-bottom:20px;">Masukkan kode akses pengunjung untuk memeriksa data sebelum verifikasi:</p>
+            
+            <div class="form-group">
+                <input type="text" id="absenCode" placeholder="Ketik Kode Acak (Contoh: A7K9)" style="text-transform:uppercase; font-size:18px; letter-spacing:1px; text-align:center;">
+            </div>
+            <button class="btn btn-primary" onclick="cekKodeAbsen()">Cek Data Kode</button>
+
+            <div id="absenMsg" style="margin-top:15px;"></div>
+
+            <div id="absenPreviewCard" class="preview-card hidden">
+                <div class="preview-row"><span class="preview-label">Kode Akses</span><span class="preview-value" id="prevCode" style="color:var(--primary); font-family:monospace; font-size:16px;"></span></div>
+                <div class="preview-row"><span class="preview-label">Nama Lengkap</span><span class="preview-value" id="prevName"></span></div>
+                <div class="preview-row"><span class="preview-label">Email</span><span class="preview-value" id="prevEmail"></span></div>
+                <div class="preview-row"><span class="preview-label">Status / Peran</span><span class="preview-value" id="prevRole"></span></div>
+                <div class="preview-row"><span class="preview-label">Asal Instansi</span><span class="preview-value" id="prevSchool"></span></div>
+                <div class="preview-row"><span class="preview-label">Status Presensi</span><span id="prevStatusBadge"></span></div>
+                
+                <div class="flex-buttons">
+                    <button id="btnKonfirmasiAbsen" class="btn btn-success" onclick="konfirmasiAbsen()">Konfirmasi Kehadiran dan Aktifkan Voting</button>
+                    <button id="btnBatalAbsen" class="btn btn-warning hidden" onclick="batalkanAbsen()">Batalkan Kehadiran (Reset)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: KELOLA FINALIS -->
+        <div id="tab-finalis" class="tab-content">
+            <h3>Input Data Finalis Exhibition</h3>
+            <div class="form-grid">
+                <div class="form-group"><label>Nama Kelompok / Finalis</label><input type="text" id="finName" placeholder="Contoh: Tim Exhibition A"></div>
+                <div class="form-group"><label>Asal Sekolah / Instansi</label><input type="text" id="finSchool" placeholder="Contoh: SMAN 1 Surabaya"></div>
+            </div>
+            <div class="form-group"><label>Upload Foto Kelompok</label><input type="file" id="finPhoto" accept="image/*"></div>
+            <button class="btn btn-primary" onclick="tambahFinalis()">Tambah Data Finalis</button>
+
+            <h3 style="margin-top: 35px;">Daftar Finalis Aktif</h3>
+            <div class="finalist-grid" id="finalistDisplayGrid"></div>
+        </div>
+
+        <!-- TAB 5: LIVE HASIL VOTE -->
+        <div id="tab-vote" class="tab-content">
+            <h3>Monitoring Perolehan Suara & Rekapitulasi</h3>
+            
+            <div class="stats-grid">
+                <div class="stat-card"><h4 id="statDaftar">0</h4><p>Total Terdaftar</p></div>
+                <div class="stat-card"><h4 id="statHadir">0</h4><p>Sudah Diaktivasi (Hadir)</p></div>
+                <div class="stat-card"><h4 id="statVote" style="color:var(--success);">0</h4><p>Suara Masuk</p></div>
+            </div>
+
+            <div style="background:#f8fafc; border:1px solid var(--border-color); padding:16px; border-radius:12px; margin-bottom:25px;" id="rekapKehadiranBar"></div>
+
+            <h4 style="margin-bottom:12px; color:var(--text-main);">Perolehan Suara Finalis</h4>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>Finalis / Kelompok</th><th style="width:140px;">Jumlah Suara</th><th>Persentase Visual</th></tr></thead>
+                    <tbody id="finalistVoteSummaryTable"></tbody>
+                </table>
+            </div>
+
+            <h4 style="margin-top:30px; margin-bottom:12px; color:var(--text-main);">Detail Log Suara Masuk</h4>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>Kode</th><th>Nama Peserta</th><th>Pilihan Finalis</th><th>Aksi</th></tr></thead>
+                    <tbody id="logVoteTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOX MODAL KONFIRMASI CUSTOM -->
+    <div class="modal-overlay" id="customModal">
+        <div class="modal-box">
+            <div class="modal-icon">!</div>
+            <h3 class="modal-title">Konfirmasi Tindakan</h3>
+            <p class="modal-text" id="modalPesan">Apakah Anda yakin ingin melakukan ini?</p>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="tutupModal()">Batal</button>
+                <button class="btn-confirm" id="btnEksekusiModal">Ya, Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FORM EDIT PESERTA -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-box" style="text-align: left;">
+            <h3 class="modal-title" style="text-align: center; margin-bottom: 20px;">Edit Data Peserta</h3>
+            <input type="hidden" id="editCodeHidden">
+            
+            <div class="form-group">
+                <label>Nama Lengkap</label>
+                <input type="text" id="editName">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="editEmail">
+            </div>
+            <div class="form-group">
+                <label>Status Email</label>
+                <select id="editEmailSent">
+                    <option value="false">Belum</option>
+                    <option value="true">Sudah Dikirim</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Status / Peran</label>
+                <input type="text" id="editRole">
+            </div>
+            <div class="form-group">
+                <label>Asal Instansi</label>
+                <input type="text" id="editSchool">
+            </div>
+
+            <div class="modal-actions" style="margin-top: 24px;">
+                <button class="btn-cancel" onclick="tutupEditModal()">Batal</button>
+                <button class="btn btn-primary" style="flex: 1; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;" onclick="simpanEditPeserta()">Simpan Perubahan</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
+        .header-badge { background: #334155; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; color: #cbd5e1; border: 1px solid #475569; }
+
+        /* NAV TABS */
+        .nav-tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
+        .nav-tab {
+            background: white; border: 1px solid var(--border-color); color: var(--text-muted);
+            padding: 12px 18px; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer;
+            white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .nav-tab:hover { background: #f1f5f9; color: var(--text-main); }
+        .nav-tab.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2); }
+
+        /* TAB CONTENT */
+        .tab-content { display: none; background: var(--card-bg); border-radius: 16px; padding: 28px; border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .tab-content.active { display: block; }
+
+        h3 { margin-top: 0; color: var(--text-main); font-size: 18px; font-weight: 700; margin-bottom: 20px; border-bottom: 2px solid var(--bg-color); padding-bottom: 10px; }
+
+        /* FORMS & UPLOAD BOX */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+        input, select {
+            width: 100%; padding: 11px 14px; border-radius: 8px; border: 1px solid var(--border-color);
+            background: #f8fafc; font-size: 14px; outline: none; color: var(--text-main);
+        }
+        input:focus, select:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        
+        .upload-box { border: 2px dashed var(--primary); padding: 20px; border-radius: 12px; text-align: center; margin-top: 30px; background: #eff6ff; }
+        .upload-box h4 { margin-top: 0; margin-bottom: 8px; color: var(--primary); font-size: 16px; font-weight: 700; }
+
         /* BUTTONS */
         .btn { padding: 11px 18px; border-radius: 8px; border: none; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
         .btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-hover); }
