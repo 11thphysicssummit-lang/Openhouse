@@ -71,8 +71,9 @@
         .btn-success { background: var(--success); color: white; } .btn-success:hover { filter: brightness(0.9); }
         .btn-warning { background: #f59e0b; color: white; } .btn-warning:hover { filter: brightness(0.9); }
         .btn-danger { background: var(--danger); color: white; } .btn-danger:hover { filter: brightness(0.9); }
-        .btn-sm-edit { background: #fef3c7; color: #92400e; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
-        .btn-sm-del { background: #fee2e2; color: #991b1b; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
+        .btn-sm-edit { background: #fef3c7; color: #92400e; border: none; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
+        .btn-sm-del { background: #fee2e2; color: #991b1b; border: none; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
+        .btn-sm-mail { background: #e0f2fe; color: #0369a1; border: none; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
 
         /* TABLES */
         .table-responsive { overflow-x: auto; margin-top: 15px; border-radius: 10px; border: 1px solid var(--border-color); }
@@ -328,6 +329,17 @@
             });
         }
 
+        // FUNGSI KIRIM KODE VIA EMAIL (Membuka Mailto Client)
+        window.kirimEmailKode = function(code, name, email) {
+            if (!email || email === "-" || email.trim() === "") {
+                alert("Peserta ini belum memiliki alamat email yang valid!");
+                return;
+            }
+            const subject = encodeURIComponent("Kode Akses Open House Fisika ITS 2026");
+            const body = encodeURIComponent(`Halo ${name},\n\nTerima kasih telah mendaftar di Open House Fisika ITS 2026.\nBerikut adalah Kode Akses unik kamu untuk presensi dan voting pameran:\n\nKODE AKSES: ${code}\n\nTunjukkan kode ini di meja registrasi saat kedatanganmu di Departemen Fisika ITS.\n\nSampai jumpa di lokasi!`);
+            window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+        }
+
         window.tambahFinalis = async function() {
             const name = document.getElementById('finName').value.trim();
             const school = document.getElementById('finSchool').value.trim();
@@ -429,7 +441,8 @@
                         <td><span style="color:var(--text-muted);">${data.role || '-'}</span></td>
                         <td>${data.school}</td>
                         <td>${data.isPresent ? '<span class="badge badge-success">Hadir</span>' : '<span class="badge badge-warning">Belum</span>'}</td>
-                        <td style="white-space: nowrap;">
+                        <td style="white-space: nowrap; display: flex; gap: 6px;">
+                            <button class="btn-sm-mail" onclick="kirimEmailKode('${code}', '${data.name}', '${data.email}')" title="Kirim Kode via Email">📧 Email</button>
                             <button class="btn-sm-edit" onclick="editPeserta('${code}', '${data.name}', '${data.email}', '${data.role}', '${data.school}')">Edit</button>
                             <button class="btn-sm-del" onclick="hapusPeserta('${code}')">Hapus</button>
                         </td>
