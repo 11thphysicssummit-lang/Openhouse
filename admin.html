@@ -293,7 +293,6 @@
                 if (jsonData.length === 0) { alert("File Excel kosong atau format tidak sesuai!"); return; }
                 
                 bukaModalKonfirmasi(`Ditemukan <strong>${jsonData.length} baris data</strong>. Yakin ingin mengunggah semuanya ke sistem dengan kode acak?`, async () => {
-                    // Tampilkan indikator loading pada tombol upload
                     const uploadBtn = document.querySelector('.upload-box .btn-success');
                     const originalText = uploadBtn.innerHTML;
                     uploadBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Memproses ${jsonData.length} data...`;
@@ -307,6 +306,7 @@
                         let updates = {};
                         let successCount = 0;
                         let baseTime = Date.now();
+                        let defaultIsPresent = document.getElementById('excelIsPresent').checked;
 
                         jsonData.forEach((row, index) => {
                             let name = row["Nama"] || row["nama"] || row["Nama Lengkap"] || row["Name"];
@@ -319,11 +319,10 @@
                             let email = row["Email"] || row["email"] || row["E-mail"] || "-";
                             let role = row["Status"] || row["status"] || row["Peran"] || "Siswa";
                             let school = row["Asal Instansi"] || row["Asal Sekolah"] || row["Instansi"] || "-";
-                            let isPresent = false;
 
                             updates[`participants/${code}`] = {
                                 name: name.toString().trim(), email: email.toString().trim(), role: role.toString().trim(),
-                                school: school.toString().trim(), isPresent: isPresent, hasVoted: false, votedCandidateId: null,
+                                school: school.toString().trim(), isPresent: defaultIsPresent, hasVoted: false, votedCandidateId: null,
                                 emailSent: false, createdAt: baseTime + index
                             };
                             successCount++;
@@ -333,6 +332,7 @@
                             await update(ref(db), updates);
                             alert(`Upload Berhasil! ${successCount} peserta ditambahkan.`);
                             fileInput.value = "";
+                            document.getElementById('excelIsPresent').checked = false;
                         } else { 
                             alert("Gagal memproses. Pastikan tabel memiliki kolom 'Nama'."); 
                         }
@@ -705,6 +705,12 @@
                 <i class="fas fa-file-excel"></i>
                 <h4>Upload Data Massal (Excel/CSV)</h4>
                 <p style="font-size:14px; color:var(--text-muted); margin-bottom:15px; line-height:1.5;">Pastikan kolom memiliki: <strong>Nama</strong>, <strong>Email</strong>, <strong>Status</strong>, dan <strong>Asal Instansi</strong>.<br><em>Catatan: Kode akan dibuat otomatis untuk setiap baris data.</em></p>
+                
+                <div style="margin: 15px 0; display: inline-flex; align-items: center; gap: 8px; background: white; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border-color);" onclick="event.stopPropagation()">
+                    <input type="checkbox" id="excelIsPresent" style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
+                    <label for="excelIsPresent" style="margin: 0; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-main);">Langsung Aktifkan Kehadiran Semua Peserta di File Ini</label>
+                </div>
+
                 <input type="file" id="excelFile" accept=".xlsx, .xls, .csv">
                 <button class="btn btn-success" onclick="uploadExcel(); event.preventDefault();" style="margin-top: 10px;"><i class="fas fa-cloud-upload-alt"></i> Unggah Data Excel</button>
             </label>
