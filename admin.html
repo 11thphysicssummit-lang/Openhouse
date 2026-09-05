@@ -334,7 +334,7 @@
             });
         }
 
-        // FUNGSI KIRIM KODE VIA EMAIL (Disesuaikan ke Departemen Fisika ITS)
+        // FUNGSI KIRIM KODE VIA EMAIL (Peringatan Ketat: Jangan Disebar & 1 Kali Pakai)
         window.kirimEmailKode = async function(code, name, email) {
             if (!email || email === "-" || email.trim() === "") {
                 alert("Peserta ini belum memiliki alamat email yang valid!");
@@ -342,7 +342,7 @@
             }
             
             const subject = encodeURIComponent("✨ Tiket & Kode Akses Resmi - Open House Fisika ITS 2026");
-            const body = encodeURIComponent(`Halo ${name},\n\nTerima kasih telah mendaftarkan diri pada acara Open House Fisika ITS 2026! Kami sangat antusias menyambut kehadiranmu di Departemen Fisika ITS.\n\nBerikut adalah KODE AKSES unikmu untuk presensi kehadiran dan voting pameran karya:\n\n📌 KODE AKSES : [ ${code} ]\n\nPetunjuk Singkat:\n1. Tunjukkan kode akses atau email ini kepada panitia di meja registrasi Departemen Fisika ITS.\n2. Setelah presensi dikonfirmasi, kamu berhak memberikan suara (voting) untuk karya kelompok finalis favoritmu.\n\nSimpan email ini baik-baik ya. Sampai jumpa di lokasi!\n\nSalam hangat,\nPanitia Open House Fisika ITS 2026`);
+            const body = encodeURIComponent(`Halo ${name},\n\nTerima kasih telah mendaftarkan diri pada acara Open House Fisika ITS 2026! Kami sangat antusias menyambut kehadiranmu di Departemen Fisika ITS.\n\nBerikut adalah KODE AKSES unikmu untuk presensi kehadiran dan voting pameran karya:\n\n📌 KODE AKSES : [ ${code} ]\n\n⚠️ PERINGATAN PENTING:\n- JANGAN SEBARKAN atau tunjukkan kode akses ini kepada orang lain.\n- Kode ini bersifat rahasia dan HANYA BISA DIGUNAKAN 1 KALI untuk proses presensi dan voting.\n\nPetunjuk Kehadiran:\n1. Datang langsung ke meja registrasi di Departemen Fisika ITS.\n2. Tunjukkan email atau kode akses ini kepada panitia untuk diaktifkan.\n3. Setelah dikonfirmasi hadir, kamu dapat menggunakan hak suara (voting) untuk memilih kelompok finalis favoritmu.\n\nSimpan email ini baik-baik ya. Sampai jumpa di lokasi!\n\nSalam hangat,\nPanitia Open House Fisika ITS 2026`);
             
             // Tandai di database bahwa email sudah dikirim
             await update(ref(db, `participants/${code}`), { emailSent: true });
