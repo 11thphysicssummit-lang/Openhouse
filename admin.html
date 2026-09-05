@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Admin - Open House Fisika</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Tambahan Library SheetJS untuk baca Excel -->
+    <!-- Tambahan Library SheetJS untuk baca/tulis Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -23,7 +23,7 @@
 
         * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.2s ease; }
         body { background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 24px; min-height: 100vh; }
-        .container { max-width: 1100px; margin: 0 auto; }
+        .container { max-width: 1100px; margin: 0 auto; position: relative; }
 
         /* HEADER BANNER */
         .header-banner {
@@ -70,6 +70,7 @@
         .btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-hover); }
         .btn-success { background: var(--success); color: white; } .btn-success:hover { filter: brightness(0.9); }
         .btn-warning { background: #f59e0b; color: white; } .btn-warning:hover { filter: brightness(0.9); }
+        .btn-danger { background: var(--danger); color: white; } .btn-danger:hover { filter: brightness(0.9); }
         .btn-sm-edit { background: #fef3c7; color: #92400e; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
         .btn-sm-del { background: #fee2e2; color: #991b1b; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
 
@@ -110,6 +111,31 @@
         .vote-bar-bg { background: #e2e8f0; height: 8px; border-radius: 8px; overflow: hidden; margin-top: 6px; }
         .vote-bar-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.4s ease; }
 
+        /* CUSTOM MODAL (Tengah Layar) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-box {
+            background: white; width: 90%; max-width: 420px; border-radius: 16px;
+            padding: 28px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            transform: translateY(20px); transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-box { transform: translateY(0); }
+        .modal-icon {
+            width: 56px; height: 56px; background: #fee2e2; color: #ef4444; border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; margin: 0 auto 16px auto;
+        }
+        .modal-title { font-size: 20px; font-weight: 700; color: var(--text-main); margin: 0 0 10px 0; }
+        .modal-text { font-size: 14px; color: var(--text-muted); margin: 0 0 24px 0; line-height: 1.6; }
+        .modal-actions { display: flex; gap: 12px; }
+        .modal-actions button { flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-cancel { background: #f1f5f9; color: #475569; } .btn-cancel:hover { background: #e2e8f0; }
+        .btn-confirm { background: #ef4444; color: white; } .btn-confirm:hover { background: #b91c1c; }
+
         .hidden { display: none !important; }
         .flex-buttons { display: flex; gap: 12px; margin-top: 20px; }
     </style>
@@ -134,7 +160,26 @@
 
         let currentAbsenCode = "";
 
-        // FUNGSI NAVIGASI TAB
+        // ---- SISTEM CUSTOM MODAL KONFIRMASI ----
+        let confirmActionCallback = null;
+        
+        window.bukaModalKonfirmasi = function(pesan, aksi) {
+            document.getElementById('modalPesan').innerText = pesan;
+            confirmActionCallback = aksi;
+            document.getElementById('customModal').classList.add('active');
+        }
+
+        window.tutupModal = function() {
+            document.getElementById('customModal').classList.remove('active');
+            confirmActionCallback = null;
+        }
+
+        document.getElementById('btnEksekusiModal').addEventListener('click', async function() {
+            if (confirmActionCallback) await confirmActionCallback();
+            tutupModal();
+        });
+        // ----------------------------------------
+
         window.openTab = function(tabName, evt) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
@@ -142,27 +187,24 @@
             if(evt) evt.currentTarget.classList.add('active');
         }
 
-        // GENERATE KODE PESERTA (PERBAIKAN LOGIKA)
         async function getNextCode() {
             const snapshot = await get(ref(db, 'participants'));
             if (!snapshot.exists()) return "OH01";
             
             let maxNumber = 0;
             snapshot.forEach((child) => {
-                let code = child.key; // Contoh: "OH54"
+                let code = child.key;
                 if(code.startsWith("OH")) {
-                    let num = parseInt(code.substring(2)); // Ambil angka 54
+                    let num = parseInt(code.substring(2));
                     if(!isNaN(num) && num > maxNumber) {
                         maxNumber = num;
                     }
                 }
             });
-            
             let nextNumber = maxNumber + 1;
             return "OH" + (nextNumber < 10 ? "0" + nextNumber : nextNumber);
         }
 
-        // TAB 1: DAFTARKAN PESERTA (MANUAL)
         window.daftarkanPeserta = async function() {
             const name = document.getElementById('regName').value.trim();
             const role = document.getElementById('regRole').value.trim();
@@ -186,7 +228,6 @@
             document.getElementById('regSchool').value = "";
         }
 
-        // TAB 1: UPLOAD EXCEL (MASSAL)
         window.uploadExcel = async function() {
             const fileInput = document.getElementById('excelFile');
             if (fileInput.files.length === 0) { alert("Pilih file Excel atau CSV terlebih dahulu!"); return; }
@@ -197,63 +238,97 @@
             reader.onload = async function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                 const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
                 if (jsonData.length === 0) { alert("File Excel kosong atau format tidak sesuai!"); return; }
-                if (!confirm(`Ditemukan ${jsonData.length} baris data. Yakin ingin mengunggah semuanya ke database?`)) return;
+                
+                bukaModalKonfirmasi(`Ditemukan ${jsonData.length} baris data. Yakin ingin mengunggah semuanya ke sistem?`, async () => {
+                    const snapshot = await get(ref(db, 'participants'));
+                    let maxNumber = 0;
+                    if (snapshot.exists()) {
+                        snapshot.forEach((child) => {
+                            let code = child.key;
+                            if(code.startsWith("OH")) {
+                                let num = parseInt(code.substring(2));
+                                if(!isNaN(num) && num > maxNumber) maxNumber = num;
+                            }
+                        });
+                    }
 
-                // Ambil max number saat ini dari database
-                const snapshot = await get(ref(db, 'participants'));
-                let maxNumber = 0;
-                if (snapshot.exists()) {
-                    snapshot.forEach((child) => {
-                        let code = child.key;
-                        if(code.startsWith("OH")) {
-                            let num = parseInt(code.substring(2));
-                            if(!isNaN(num) && num > maxNumber) maxNumber = num;
-                        }
+                    let updates = {};
+                    let successCount = 0;
+
+                    jsonData.forEach((row) => {
+                        let name = row["Nama"] || row["nama"] || row["Nama Lengkap"] || row["Name"];
+                        if (!name) return;
+
+                        maxNumber++;
+                        let code = "OH" + (maxNumber < 10 ? "0" + maxNumber : maxNumber);
+                        let role = row["Status"] || row["status"] || row["Peran"] || "Siswa";
+                        let school = row["Asal Instansi"] || row["Asal Sekolah"] || row["Instansi"] || "-";
+
+                        updates[`participants/${code}`] = {
+                            name: name.toString().trim(),
+                            role: role.toString().trim(),
+                            school: school.toString().trim(),
+                            isPresent: false,
+                            hasVoted: false,
+                            votedCandidateId: null
+                        };
+                        successCount++;
                     });
-                }
 
-                let updates = {};
-                let successCount = 0;
-
-                jsonData.forEach((row) => {
-                    // Deteksi nama kolom (bisa fleksibel huruf besar/kecil)
-                    let name = row["Nama"] || row["nama"] || row["Nama Lengkap"] || row["Name"];
-                    if (!name) return; // Lewati jika tidak ada kolom nama
-
-                    maxNumber++;
-                    let code = "OH" + (maxNumber < 10 ? "0" + maxNumber : maxNumber);
-                    
-                    let role = row["Status"] || row["status"] || row["Peran"] || "Siswa";
-                    let school = row["Asal Instansi"] || row["Asal Sekolah"] || row["Instansi"] || "-";
-
-                    updates[`participants/${code}`] = {
-                        name: name.toString().trim(),
-                        role: role.toString().trim(),
-                        school: school.toString().trim(),
-                        isPresent: false,
-                        hasVoted: false,
-                        votedCandidateId: null
-                    };
-                    successCount++;
+                    if (successCount > 0) {
+                        await update(ref(db), updates);
+                        alert(`Upload Berhasil! ${successCount} peserta telah ditambahkan.`);
+                        fileInput.value = "";
+                    } else {
+                        alert("Gagal memproses. Pastikan tabel memiliki kolom 'Nama'.");
+                    }
                 });
-
-                if (successCount > 0) {
-                    await update(ref(db), updates);
-                    alert(`Upload Berhasil! ${successCount} peserta telah ditambahkan ke sistem.`);
-                    fileInput.value = "";
-                } else {
-                    alert("Gagal memproses. Pastikan tabel Excel kamu memiliki kolom berjudul 'Nama'.");
-                }
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // TAB KELOLA FINALIS
+        // FITUR EXPORT (DOWNLOAD) DATA EXCEL
+        window.exportKeExcel = async function() {
+            const snapshot = await get(ref(db, 'participants'));
+            if (!snapshot.exists()) {
+                alert("Tidak ada data peserta untuk diunduh!"); return;
+            }
+            
+            let dataArr = [];
+            snapshot.forEach((child) => {
+                let code = child.key;
+                let val = child.val();
+                dataArr.push({
+                    "Kode Akses": code,
+                    "Nama Lengkap": val.name,
+                    "Status/Peran": val.role,
+                    "Asal Instansi": val.school,
+                    "Kehadiran Hari H": val.isPresent ? "Hadir" : "Belum Hadir",
+                    "Status Voting": val.hasVoted ? "Sudah Vote" : "Belum Vote"
+                });
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(dataArr);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Data_Peserta");
+            
+            let date = new Date();
+            let fileName = `Data_Peserta_OpenHouse_${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}.xlsx`;
+            XLSX.writeFile(workbook, fileName);
+        }
+
+        // FITUR HAPUS SEMUA PESERTA
+        window.hapusSemuaPeserta = function() {
+            bukaModalKonfirmasi("PERINGATAN KERAS! Anda akan MENGHAPUS SELURUH DATA PESERTA yang terdaftar. Data yang terhapus tidak dapat dikembalikan. Lanjutkan?", async () => {
+                await remove(ref(db, 'participants'));
+                alert("Seluruh data peserta telah berhasil dikosongkan.");
+            });
+        }
+
         window.tambahFinalis = async function() {
             const name = document.getElementById('finName').value.trim();
             const school = document.getElementById('finSchool').value.trim();
@@ -269,58 +344,33 @@
                 const img = new Image();
                 img.onload = async function() {
                     const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    const max_size = 450;
-
-                    if (width > height) {
-                        if (width > max_size) { height *= max_size / width; width = max_size; }
-                    } else {
-                        if (height > max_size) { width *= max_size / height; height = max_size; }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
+                    let width = img.width; let height = img.height; const max_size = 450;
+                    if (width > height) { if (width > max_size) { height *= max_size / width; width = max_size; } } 
+                    else { if (height > max_size) { width *= max_size / height; height = max_size; } }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
                     const photoBase64 = canvas.toDataURL('image/jpeg', 0.75);
                     const candidateId = "finalis-" + Date.now();
 
-                    await set(ref(db, `candidates/${candidateId}`), {
-                        name: name,
-                        school: school,
-                        photo: photoBase64
-                    });
-
+                    await set(ref(db, `candidates/${candidateId}`), { name: name, school: school, photo: photoBase64 });
                     alert("Data Finalis Berhasil Ditambahkan!");
-                    document.getElementById('finName').value = "";
-                    document.getElementById('finSchool').value = "";
-                    fileInput.value = "";
+                    document.getElementById('finName').value = ""; document.getElementById('finSchool').value = ""; fileInput.value = "";
                 };
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
         }
 
-        // REALTIME LISTENER FINALIS
         onValue(ref(db, 'candidates'), (snapshot) => {
             const grid = document.getElementById('finalistDisplayGrid');
             grid.innerHTML = "";
-
-            if (!snapshot.exists()) {
-                grid.innerHTML = `<p style="color:var(--text-muted); grid-column: 1/-1;">Belum ada data finalis yang dimasukkan.</p>`;
-                return;
-            }
+            if (!snapshot.exists()) { grid.innerHTML = `<p style="color:var(--text-muted); grid-column: 1/-1;">Belum ada data finalis.</p>`; return; }
 
             snapshot.forEach((child) => {
-                let id = child.key;
-                let data = child.val();
-
-                let card = document.createElement('div');
-                card.className = "finalist-card";
+                let id = child.key; let data = child.val();
+                let card = document.createElement('div'); card.className = "finalist-card";
                 card.innerHTML = `
-                    <img src="${data.photo}" class="finalist-img" alt="Foto Kelompok">
+                    <img src="${data.photo}" class="finalist-img" alt="Foto">
                     <div class="finalist-name">${data.name}</div>
                     <div class="finalist-school">${data.school}</div>
                     <button class="btn-sm-del" onclick="hapusFinalis('${id}')">Hapus Finalis</button>
@@ -329,19 +379,16 @@
             });
         });
 
-        window.hapusFinalis = async function(id) {
-            if(confirm("Apakah Anda yakin ingin menghapus data finalis ini?")) {
+        window.hapusFinalis = function(id) {
+            bukaModalKonfirmasi("Apakah Anda yakin ingin menghapus data finalis ini dari sistem voting?", async () => {
                 await remove(ref(db, `candidates/${id}`));
-            }
+            });
         }
 
-        // REALTIME LISTENER PESERTA & VOTE
         onValue(ref(db, 'participants'), async (snapshot) => {
             const tableBody = document.getElementById('listPesertaTable');
             tableBody.innerHTML = "";
-            
-            let totalDaftar = 0, totalHadir = 0, totalVote = 0;
-            let voteCounts = {};
+            let totalDaftar = 0, totalHadir = 0, totalVote = 0; let voteCounts = {};
             
             const candidateSnap = await get(ref(db, 'candidates'));
             let candidateData = {};
@@ -357,18 +404,13 @@
                 let no = 1;
                 snapshot.forEach((child) => {
                     totalDaftar++;
-                    let code = child.key;
-                    let data = child.val();
+                    let code = child.key; let data = child.val();
 
                     if(data.isPresent) totalHadir++;
                     if(data.hasVoted) {
                         totalVote++;
-                        if(voteCounts[data.votedCandidateId] !== undefined) {
-                            voteCounts[data.votedCandidateId]++;
-                        }
-
+                        if(voteCounts[data.votedCandidateId] !== undefined) voteCounts[data.votedCandidateId]++;
                         let candName = candidateData[data.votedCandidateId] ? candidateData[data.votedCandidateId].name : data.votedCandidateId;
-
                         let vRow = document.createElement('tr');
                         vRow.innerHTML = `
                             <td><strong style="color:var(--primary); font-family:monospace;">${code}</strong></td>
@@ -387,7 +429,7 @@
                         <td><span style="color:var(--text-muted);">${data.role || '-'}</span></td>
                         <td>${data.school}</td>
                         <td>${data.isPresent ? '<span class="badge badge-success">Hadir</span>' : '<span class="badge badge-warning">Belum</span>'}</td>
-                        <td>
+                        <td style="white-space: nowrap;">
                             <button class="btn-sm-edit" onclick="editPeserta('${code}', '${data.name}', '${data.role}', '${data.school}')">Edit</button>
                             <button class="btn-sm-del" onclick="hapusPeserta('${code}')">Hapus</button>
                         </td>
@@ -416,7 +458,6 @@
 
             const summaryTable = document.getElementById('finalistVoteSummaryTable');
             summaryTable.innerHTML = "";
-
             if(Object.keys(candidateData).length === 0) {
                 summaryTable.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Belum ada data finalis.</td></tr>`;
             } else {
@@ -437,101 +478,71 @@
             }
         });
 
-        // EDIT & HAPUS PESERTA
         window.editPeserta = async function(code, oldName, oldRole, oldSchool) {
-            let newName = prompt("Ubah Nama Peserta:", oldName);
-            if(newName === null) return;
+            let newName = prompt("Ubah Nama Peserta:", oldName); if(newName === null) return;
             let newRole = prompt("Ubah Status:", oldRole);
             let newSchool = prompt("Ubah Asal Instansi:", oldSchool);
-
             await update(ref(db, `participants/${code}`), { name: newName, role: newRole, school: newSchool });
         }
 
-        window.hapusPeserta = async function(code) {
-            if(confirm(`Hapus peserta dengan kode ${code}?`)) {
+        window.hapusPeserta = function(code) {
+            bukaModalKonfirmasi(`Hapus data peserta dengan kode ${code}?`, async () => {
                 await remove(ref(db, `participants/${code}`));
-            }
+            });
         }
 
-        // TAB LIVE ABSEN: STEP 1 (CEK DATA KODE)
         window.cekKodeAbsen = async function() {
             let code = document.getElementById('absenCode').value.trim().toUpperCase();
             let msgBox = document.getElementById('absenMsg');
             let previewCard = document.getElementById('absenPreviewCard');
-
-            msgBox.innerHTML = "";
-            previewCard.classList.add('hidden');
-
+            msgBox.innerHTML = ""; previewCard.classList.add('hidden');
             if(!code) { alert("Masukkan kode peserta terlebih dahulu!"); return; }
 
             const snapshot = await get(ref(db, `participants/${code}`));
             if(!snapshot.exists()) {
-                msgBox.innerHTML = `<div style="background:#fee2e2; color:#991b1b; padding:12px; border-radius:8px; font-weight:600;">Kode ${code} tidak ditemukan. Sila daftarkan terlebih dahulu.</div>`;
+                msgBox.innerHTML = `<div style="background:#fee2e2; color:#991b1b; padding:12px; border-radius:8px; font-weight:600;">Kode ${code} tidak ditemukan.</div>`;
                 return;
             }
 
-            currentAbsenCode = code;
-            const data = snapshot.val();
-
-            document.getElementById('prevCode').innerText = code;
-            document.getElementById('prevName').innerText = data.name || "-";
-            document.getElementById('prevRole').innerText = data.role || "-";
-            document.getElementById('prevSchool').innerText = data.school || "-";
+            currentAbsenCode = code; const data = snapshot.val();
+            document.getElementById('prevCode').innerText = code; document.getElementById('prevName').innerText = data.name || "-";
+            document.getElementById('prevRole').innerText = data.role || "-"; document.getElementById('prevSchool').innerText = data.school || "-";
 
             const badgeStatus = document.getElementById('prevStatusBadge');
-            const btnKonfirmasi = document.getElementById('btnKonfirmasiAbsen');
-            const btnBatal = document.getElementById('btnBatalAbsen');
+            const btnKonfirmasi = document.getElementById('btnKonfirmasiAbsen'); const btnBatal = document.getElementById('btnBatalAbsen');
 
             if(data.isPresent) {
-                badgeStatus.className = "badge badge-success";
-                badgeStatus.innerText = "Sudah Hadir & Aktif";
-                btnKonfirmasi.classList.add('hidden');
-                btnBatal.classList.remove('hidden');
+                badgeStatus.className = "badge badge-success"; badgeStatus.innerText = "Sudah Hadir & Aktif";
+                btnKonfirmasi.classList.add('hidden'); btnBatal.classList.remove('hidden');
             } else {
-                badgeStatus.className = "badge badge-warning";
-                badgeStatus.innerText = "Belum Hadir";
-                btnKonfirmasi.classList.remove('hidden');
-                btnBatal.classList.add('hidden');
+                badgeStatus.className = "badge badge-warning"; badgeStatus.innerText = "Belum Hadir";
+                btnKonfirmasi.classList.remove('hidden'); btnBatal.classList.add('hidden');
             }
-
             previewCard.classList.remove('hidden');
         }
 
-        // TAB LIVE ABSEN: STEP 2 (KONFIRMASI KEHADIRAN)
         window.konfirmasiAbsen = async function() {
             if(!currentAbsenCode) return;
-
             await update(ref(db, `participants/${currentAbsenCode}`), { isPresent: true });
-
-            document.getElementById('absenMsg').innerHTML = `<div style="background:#d1fae5; color:#065f46; padding:12px; border-radius:8px; font-weight:600;">Verifikasi Berhasil: Peserta ${currentAbsenCode} dinyatakan Hadir & Siap Vote.</div>`;
-            
-            document.getElementById('prevStatusBadge').className = "badge badge-success";
-            document.getElementById('prevStatusBadge').innerText = "Sudah Hadir & Aktif";
-            document.getElementById('btnKonfirmasiAbsen').classList.add('hidden');
-            document.getElementById('btnBatalAbsen').classList.remove('hidden');
+            document.getElementById('absenMsg').innerHTML = `<div style="background:#d1fae5; color:#065f46; padding:12px; border-radius:8px; font-weight:600;">Verifikasi Berhasil: Peserta ${currentAbsenCode} Siap Vote.</div>`;
+            document.getElementById('prevStatusBadge').className = "badge badge-success"; document.getElementById('prevStatusBadge').innerText = "Sudah Hadir & Aktif";
+            document.getElementById('btnKonfirmasiAbsen').classList.add('hidden'); document.getElementById('btnBatalAbsen').classList.remove('hidden');
         }
 
-        // TAB LIVE ABSEN: STEP 3 (BATALKAN KEHADIRAN)
-        window.batalkanAbsen = async function() {
+        window.batalkanAbsen = function() {
             if(!currentAbsenCode) return;
-            
-            if(confirm(`Yakin ingin membatalkan status hadir untuk peserta ${currentAbsenCode}?\n(Ini akan mengunci kembali akses kode ini untuk voting)`)) {
+            bukaModalKonfirmasi(`Batalkan status hadir untuk peserta ${currentAbsenCode}?\n(Ini akan mengunci kembali akses voting)`, async () => {
                 await update(ref(db, `participants/${currentAbsenCode}`), { isPresent: false });
-                
-                document.getElementById('absenMsg').innerHTML = `<div style="background:#fef3c7; color:#92400e; padding:12px; border-radius:8px; font-weight:600;">Status Hadir berhasil dibatalkan. Kode ${currentAbsenCode} dikunci kembali.</div>`;
-                
-                document.getElementById('prevStatusBadge').className = "badge badge-warning";
-                document.getElementById('prevStatusBadge').innerText = "Belum Hadir";
-                document.getElementById('btnKonfirmasiAbsen').classList.remove('hidden');
-                document.getElementById('btnBatalAbsen').classList.add('hidden');
-            }
+                document.getElementById('absenMsg').innerHTML = `<div style="background:#fef3c7; color:#92400e; padding:12px; border-radius:8px; font-weight:600;">Status Hadir dibatalkan. Kode dikunci.</div>`;
+                document.getElementById('prevStatusBadge').className = "badge badge-warning"; document.getElementById('prevStatusBadge').innerText = "Belum Hadir";
+                document.getElementById('btnKonfirmasiAbsen').classList.remove('hidden'); document.getElementById('btnBatalAbsen').classList.add('hidden');
+            });
         }
 
-        // BATAL VOTE DARI HALAMAN HASIL VOTE
-        window.hapusVote = async function(code) {
-            if(confirm(`Batalkan vote milik ${code}?`)) {
+        window.hapusVote = function(code) {
+            bukaModalKonfirmasi(`Cabut suara dari kode ${code}? Ini akan mengurangi perolehan suara finalis terkait.`, async () => {
                 await update(ref(db, `participants/${code}`), { hasVoted: false, votedCandidateId: null });
-            }
+            });
         }
     </script>
 </head>
@@ -560,7 +571,6 @@
         <div id="tab-daftar" class="tab-content active">
             <h3>Form Pendaftaran Awal (RSVP)</h3>
             
-            <!-- INPUT MANUAL -->
             <div class="form-group">
                 <label>Nama Lengkap Pengunjung</label>
                 <input type="text" id="regName" placeholder="Masukkan nama panjang...">
@@ -569,9 +579,7 @@
                 <div class="form-group">
                     <label>Status Pengunjung</label>
                     <input type="text" id="regRole" list="roleOptions" value="Siswa" placeholder="Pilih atau ketik status...">
-                    <datalist id="roleOptions">
-                        <option value="Siswa"><option value="Guru / Pendamping"><option value="Orang Tua Murid"><option value="Mahasiswa"><option value="Umum">
-                    </datalist>
+                    <datalist id="roleOptions"><option value="Siswa"><option value="Guru / Pendamping"><option value="Orang Tua Murid"><option value="Mahasiswa"><option value="Umum"></datalist>
                 </div>
                 <div class="form-group">
                     <label>Asal Sekolah / Instansi</label>
@@ -591,12 +599,19 @@
 
         <!-- TAB 2: PESERTA TERDAFTAR -->
         <div id="tab-peserta" class="tab-content">
-            <h3>Daftar Seluruh Peserta</h3>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+                <h3 style="margin: 0; border: none; padding: 0;">Daftar Seluruh Peserta</h3>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" style="width: auto;" onclick="exportKeExcel()">📥 Download Excel</button>
+                    <button class="btn btn-danger" style="width: auto;" onclick="hapusSemuaPeserta()">🗑️ Hapus Semua Data</button>
+                </div>
+            </div>
+            
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
-                            <th style="width:50px; text-align:center;">No</th>
+                            <th style="width:40px; text-align:center;">No</th>
                             <th>Kode</th>
                             <th>Nama Lengkap</th>
                             <th>Status</th>
@@ -622,28 +637,12 @@
 
             <div id="absenMsg" style="margin-top:15px;"></div>
 
-            <!-- CARD PRATINJAU DATA PESERTA -->
             <div id="absenPreviewCard" class="preview-card hidden">
-                <div class="preview-row">
-                    <span class="preview-label">Kode Akses</span>
-                    <span class="preview-value" id="prevCode" style="color:var(--primary); font-family:monospace; font-size:16px;"></span>
-                </div>
-                <div class="preview-row">
-                    <span class="preview-label">Nama Lengkap</span>
-                    <span class="preview-value" id="prevName"></span>
-                </div>
-                <div class="preview-row">
-                    <span class="preview-label">Status / Peran</span>
-                    <span class="preview-value" id="prevRole"></span>
-                </div>
-                <div class="preview-row">
-                    <span class="preview-label">Asal Instansi</span>
-                    <span class="preview-value" id="prevSchool"></span>
-                </div>
-                <div class="preview-row">
-                    <span class="preview-label">Status Presensi</span>
-                    <span id="prevStatusBadge"></span>
-                </div>
+                <div class="preview-row"><span class="preview-label">Kode Akses</span><span class="preview-value" id="prevCode" style="color:var(--primary); font-family:monospace; font-size:16px;"></span></div>
+                <div class="preview-row"><span class="preview-label">Nama Lengkap</span><span class="preview-value" id="prevName"></span></div>
+                <div class="preview-row"><span class="preview-label">Status / Peran</span><span class="preview-value" id="prevRole"></span></div>
+                <div class="preview-row"><span class="preview-label">Asal Instansi</span><span class="preview-value" id="prevSchool"></span></div>
+                <div class="preview-row"><span class="preview-label">Status Presensi</span><span id="prevStatusBadge"></span></div>
                 
                 <div class="flex-buttons">
                     <button id="btnKonfirmasiAbsen" class="btn btn-success" onclick="konfirmasiAbsen()">Konfirmasi Kehadiran dan Aktifkan Voting</button>
@@ -656,19 +655,10 @@
         <div id="tab-finalis" class="tab-content">
             <h3>Input Data Finalis Exhibition</h3>
             <div class="form-grid">
-                <div class="form-group">
-                    <label>Nama Kelompok / Finalis</label>
-                    <input type="text" id="finName" placeholder="Contoh: Tim Exhibition A">
-                </div>
-                <div class="form-group">
-                    <label>Asal Sekolah / Instansi</label>
-                    <input type="text" id="finSchool" placeholder="Contoh: SMAN 1 Surabaya">
-                </div>
+                <div class="form-group"><label>Nama Kelompok / Finalis</label><input type="text" id="finName" placeholder="Contoh: Tim Exhibition A"></div>
+                <div class="form-group"><label>Asal Sekolah / Instansi</label><input type="text" id="finSchool" placeholder="Contoh: SMAN 1 Surabaya"></div>
             </div>
-            <div class="form-group">
-                <label>Upload Foto Kelompok</label>
-                <input type="file" id="finPhoto" accept="image/*">
-            </div>
+            <div class="form-group"><label>Upload Foto Kelompok</label><input type="file" id="finPhoto" accept="image/*"></div>
             <button class="btn btn-primary" onclick="tambahFinalis()">Tambah Data Finalis</button>
 
             <h3 style="margin-top: 35px;">Daftar Finalis Aktif</h3>
@@ -685,17 +675,12 @@
                 <div class="stat-card"><h4 id="statVote" style="color:var(--success);">0</h4><p>Suara Masuk</p></div>
             </div>
 
-            <!-- GRAFIK / BAR REKAPITULASI -->
-            <div style="background:#f8fafc; border:1px solid var(--border-color); padding:16px; border-radius:12px; margin-bottom:25px;" id="rekapKehadiranBar">
-                <!-- Bar diisi dinamis via JS -->
-            </div>
+            <div style="background:#f8fafc; border:1px solid var(--border-color); padding:16px; border-radius:12px; margin-bottom:25px;" id="rekapKehadiranBar"></div>
 
             <h4 style="margin-bottom:12px; color:var(--text-main);">Perolehan Suara Finalis</h4>
             <div class="table-responsive">
                 <table>
-                    <thead>
-                        <tr><th>Finalis / Kelompok</th><th style="width:140px;">Jumlah Suara</th><th>Persentase Visual</th></tr>
-                    </thead>
+                    <thead><tr><th>Finalis / Kelompok</th><th style="width:140px;">Jumlah Suara</th><th>Persentase Visual</th></tr></thead>
                     <tbody id="finalistVoteSummaryTable"></tbody>
                 </table>
             </div>
@@ -703,19 +688,24 @@
             <h4 style="margin-top:30px; margin-bottom:12px; color:var(--text-main);">Detail Log Suara Masuk</h4>
             <div class="table-responsive">
                 <table>
-                    <thead>
-                        <tr>
-                            <th>Kode</th>
-                            <th>Nama Peserta</th>
-                            <th>Pilihan Finalis</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>Kode</th><th>Nama Peserta</th><th>Pilihan Finalis</th><th>Aksi</th></tr></thead>
                     <tbody id="logVoteTable"></tbody>
                 </table>
             </div>
         </div>
+    </div>
 
+    <!-- BOX MODAL KONFIRMASI CUSTOM -->
+    <div class="modal-overlay" id="customModal">
+        <div class="modal-box">
+            <div class="modal-icon">!</div>
+            <h3 class="modal-title">Konfirmasi Tindakan</h3>
+            <p class="modal-text" id="modalPesan">Apakah Anda yakin ingin melakukan ini?</p>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="tutupModal()">Batal</button>
+                <button class="btn-confirm" id="btnEksekusiModal">Ya, Lanjutkan</button>
+            </div>
+        </div>
     </div>
 
 </body>
