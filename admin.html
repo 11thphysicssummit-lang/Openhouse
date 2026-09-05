@@ -244,12 +244,10 @@
             return result;
         }
 
-        async function getUniqueRandomCode() {
-            const snapshot = await get(ref(db, 'participants'));
-            let existingCodes = new Set();
-            if (snapshot.exists()) snapshot.forEach((child) => existingCodes.add(child.key));
+        async function getUniqueRandomCode(existingCodesSet) {
             let code;
-            do { code = generateRandom4Char(); } while (existingCodes.has(code));
+            do { code = generateRandom4Char(); } while (existingCodesSet.has(code));
+            existingCodesSet.add(code);
             return code;
         }
 
@@ -262,7 +260,11 @@
 
             if (!name) { alert("Sila isi nama lengkap peserta!"); return; }
 
-            let code = await getUniqueRandomCode();
+            const snapshot = await get(ref(db, 'participants'));
+            let existingCodes = new Set();
+            if (snapshot.exists()) snapshot.forEach((child) => existingCodes.add(child.key));
+
+            let code = await getUniqueRandomCode(existingCodes);
             let timestamp = Date.now();
 
             await set(ref(db, `participants/${code}`), {
@@ -291,40 +293,56 @@
                 if (jsonData.length === 0) { alert("File Excel kosong atau format tidak sesuai!"); return; }
                 
                 bukaModalKonfirmasi(`Ditemukan <strong>${jsonData.length} baris data</strong>. Yakin ingin mengunggah semuanya ke sistem dengan kode acak?`, async () => {
-                    const snapshot = await get(ref(db, 'participants'));
-                    let usedCodes = new Set();
-                    if (snapshot.exists()) snapshot.forEach((child) => usedCodes.add(child.key));
+                    // Tampilkan indikator loading pada tombol upload
+                    const uploadBtn = document.querySelector('.upload-box .btn-success');
+                    const originalText = uploadBtn.innerHTML;
+                    uploadBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Memproses ${jsonData.length} data...`;
+                    uploadBtn.disabled = true;
 
-                    let updates = {};
-                    let successCount = 0;
-                    let baseTime = Date.now();
+                    try {
+                        const snapshot = await get(ref(db, 'participants'));
+                        let usedCodes = new Set();
+                        if (snapshot.exists()) snapshot.forEach((child) => usedCodes.add(child.key));
 
-                    jsonData.forEach((row, index) => {
-                        let name = row["Nama"] || row["nama"] || row["Nama Lengkap"] || row["Name"];
-                        if (!name) return;
+                        let updates = {};
+                        let successCount = 0;
+                        let baseTime = Date.now();
 
-                        let code;
-                        do { code = generateRandom4Char(); } while (usedCodes.has(code));
-                        usedCodes.add(code);
+                        jsonData.forEach((row, index) => {
+                            let name = row["Nama"] || row["nama"] || row["Nama Lengkap"] || row["Name"];
+                            if (!name) return;
 
-                        let email = row["Email"] || row["email"] || row["E-mail"] || "-";
-                        let role = row["Status"] || row["status"] || row["Peran"] || "Siswa";
-                        let school = row["Asal Instansi"] || row["Asal Sekolah"] || row["Instansi"] || "-";
-                        let isPresent = false;
+                            let code;
+                            do { code = generateRandom4Char(); } while (usedCodes.has(code));
+                            usedCodes.add(code);
 
-                        updates[`participants/${code}`] = {
-                            name: name.toString().trim(), email: email.toString().trim(), role: role.toString().trim(),
-                            school: school.toString().trim(), isPresent: isPresent, hasVoted: false, votedCandidateId: null,
-                            emailSent: false, createdAt: baseTime + index
-                        };
-                        successCount++;
-                    });
+                            let email = row["Email"] || row["email"] || row["E-mail"] || "-";
+                            let role = row["Status"] || row["status"] || row["Peran"] || "Siswa";
+                            let school = row["Asal Instansi"] || row["Asal Sekolah"] || row["Instansi"] || "-";
+                            let isPresent = false;
 
-                    if (successCount > 0) {
-                        await update(ref(db), updates);
-                        alert(`Upload Berhasil! ${successCount} peserta ditambahkan.`);
-                        fileInput.value = "";
-                    } else { alert("Gagal memproses. Pastikan tabel memiliki kolom 'Nama'."); }
+                            updates[`participants/${code}`] = {
+                                name: name.toString().trim(), email: email.toString().trim(), role: role.toString().trim(),
+                                school: school.toString().trim(), isPresent: isPresent, hasVoted: false, votedCandidateId: null,
+                                emailSent: false, createdAt: baseTime + index
+                            };
+                            successCount++;
+                        });
+
+                        if (successCount > 0) {
+                            await update(ref(db), updates);
+                            alert(`Upload Berhasil! ${successCount} peserta ditambahkan.`);
+                            fileInput.value = "";
+                        } else { 
+                            alert("Gagal memproses. Pastikan tabel memiliki kolom 'Nama'."); 
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert("Terjadi kesalahan saat mengunggah data.");
+                    } finally {
+                        uploadBtn.innerHTML = originalText;
+                        uploadBtn.disabled = false;
+                    }
                 }, false);
             };
             reader.readAsArrayBuffer(file);
