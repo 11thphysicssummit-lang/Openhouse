@@ -380,53 +380,6 @@
             window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
         }
 
-        window.kirimSemuaEmailOtomatis = async function() {
-            const snapshot = await get(ref(db, 'participants'));
-            if (!snapshot.exists()) { alert("Tidak ada data peserta."); return; }
-
-            let unSentList = [];
-            snapshot.forEach((child) => {
-                let val = child.val();
-                if (!val.emailSent && val.email && val.email !== "-" && val.email.trim() !== "") {
-                    unSentList.push({ code: child.key, name: val.name, email: val.email });
-                }
-            });
-
-            if (unSentList.length === 0) {
-                alert("Semua peserta dengan email valid sudah dikirimi email!");
-                return;
-            }
-
-            bukaModalKonfirmasi(`Akan memproses pengiriman email otomatis ke <strong>${unSentList.length} peserta</strong> yang belum dikirimi. Lanjutkan?`, async () => {
-                let updates = {};
-                unSentList.forEach(item => {
-                    updates[`participants/${item.code}/emailSent`] = true;
-                });
-                await update(ref(db), updates);
-
-                let first = unSentList[0];
-                const subject = encodeURIComponent("✨ Tiket & Kode Akses Resmi - Open House Fisika ITS 2026");
-                const body = encodeURIComponent(
-                    `Halo ${first.name},\n\n` +
-                    `Terima kasih telah mendaftarkan diri pada acara Open House Fisika ITS 2026 yang akan diselenggarakan pada:\n` +
-                    `📅 Tanggal: 31 Oktober 2026\n` +
-                    `📍 Lokasi: Departemen Fisika ITS\n\n` +
-                    `Berikut adalah KODE AKSES unikmu untuk voting exhibition:\n` +
-                    `📌 KODE AKSES : [ ${first.code} ]\n\n` +
-                    `🔗 Link Vote Exhibition / Scan QR di Tempat:\n` +
-                    `its.id/m/VotePSIC\n\n` +
-                    `⚠️ PERHATIAN:\n` +
-                    `1. Kode ini TIDAK DAPAT DIGUNAKAN sebelum kamu melakukan registrasi atau check-in di meja panitia saat hari-H di Departemen Fisika ITS.\n` +
-                    `2. Jangan menyebarluaskan kode akses ini kepada siapa pun karena hanya berlaku untuk satu (1) kali penggunaan.\n\n` +
-                    `Simpan email ini baik-baik ya. Sampai jumpa di lokasi!\n\n` +
-                    `Salam hangat,\n` +
-                    `Panitia Open House Fisika ITS`
-                );
-                window.location.href = `mailto:${first.email}?subject=${subject}&body=${body}`;
-                alert(`Status ${unSentList.length} email telah diperbarui menjadi 'Sudah Dikirim' di sistem.`);
-            }, false);
-        }
-
         window.editPeserta = function(code, name, email, emailSent, role, school) {
             document.getElementById('editCodeHidden').value = code; document.getElementById('editName').value = name;
             document.getElementById('editEmail').value = email; document.getElementById('editEmailSent').value = emailSent ? "true" : "false";
@@ -737,7 +690,6 @@
             <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px; margin-bottom: 24px;">
                 <h3 style="margin: 0;"><i class="fas fa-list-ul"></i> Daftar Seluruh Peserta</h3>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button class="btn btn-primary" onclick="kirimSemuaEmailOtomatis()"><i class="fas fa-paper-plane"></i> Kirim Semua Email Otomatis</button>
                     <button class="btn btn-success" onclick="exportKeExcel()"><i class="fas fa-download"></i> Download Excel</button>
                     <button class="btn btn-danger" onclick="hapusSemuaPeserta()"><i class="fas fa-trash-alt"></i> Hapus Semua</button>
                 </div>
