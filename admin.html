@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Admin - Open House Fisika</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tambahan Library SheetJS untuk baca Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #2563eb;
@@ -50,7 +52,7 @@
 
         h3 { margin-top: 0; color: var(--text-main); font-size: 18px; font-weight: 700; margin-bottom: 20px; border-bottom: 2px solid var(--bg-color); padding-bottom: 10px; }
 
-        /* FORMS */
+        /* FORMS & UPLOAD BOX */
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px; }
         .form-group { margin-bottom: 16px; }
         label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
@@ -59,6 +61,9 @@
             background: #f8fafc; font-size: 14px; outline: none; color: var(--text-main);
         }
         input:focus, select:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        
+        .upload-box { border: 2px dashed var(--primary); padding: 20px; border-radius: 12px; text-align: center; margin-top: 30px; background: #eff6ff; }
+        .upload-box h4 { margin-top: 0; margin-bottom: 8px; color: var(--primary); font-size: 16px; font-weight: 700; }
 
         /* BUTTONS */
         .btn { padding: 11px 18px; border-radius: 8px; border: none; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
@@ -82,10 +87,7 @@
         .badge-warning { background: #fef3c7; color: #92400e; }
 
         /* DETAIL CARD ABSEN */
-        .preview-card {
-            background: #f8fafc; border: 1.5px solid var(--border-color); border-radius: 12px;
-            padding: 20px; margin-top: 20px; text-align: left;
-        }
+        .preview-card { background: #f8fafc; border: 1.5px solid var(--border-color); border-radius: 12px; padding: 20px; margin-top: 20px; text-align: left; }
         .preview-row { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding: 10px 0; font-size: 14px; }
         .preview-row:last-child { border-bottom: none; }
         .preview-label { color: var(--text-muted); font-weight: 600; }
@@ -140,15 +142,27 @@
             if(evt) evt.currentTarget.classList.add('active');
         }
 
-        // GENERATE KODE PESERTA
+        // GENERATE KODE PESERTA (PERBAIKAN LOGIKA)
         async function getNextCode() {
             const snapshot = await get(ref(db, 'participants'));
             if (!snapshot.exists()) return "OH01";
-            let count = snapshot.size + 1;
-            return "OH" + (count < 10 ? "0" + count : count);
+            
+            let maxNumber = 0;
+            snapshot.forEach((child) => {
+                let code = child.key; // Contoh: "OH54"
+                if(code.startsWith("OH")) {
+                    let num = parseInt(code.substring(2)); // Ambil angka 54
+                    if(!isNaN(num) && num > maxNumber) {
+                        maxNumber = num;
+                    }
+                }
+            });
+            
+            let nextNumber = maxNumber + 1;
+            return "OH" + (nextNumber < 10 ? "0" + nextNumber : nextNumber);
         }
 
-        // TAB 1: DAFTARKAN PESERTA
+        // TAB 1: DAFTARKAN PESERTA (MANUAL)
         window.daftarkanPeserta = async function() {
             const name = document.getElementById('regName').value.trim();
             const role = document.getElementById('regRole').value.trim();
@@ -170,6 +184,73 @@
             alert(`Berhasil Terdaftar.\n\nKODE AKSES PESERTA: ${code}`);
             document.getElementById('regName').value = "";
             document.getElementById('regSchool').value = "";
+        }
+
+        // TAB 1: UPLOAD EXCEL (MASSAL)
+        window.uploadExcel = async function() {
+            const fileInput = document.getElementById('excelFile');
+            if (fileInput.files.length === 0) { alert("Pilih file Excel atau CSV terlebih dahulu!"); return; }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                if (jsonData.length === 0) { alert("File Excel kosong atau format tidak sesuai!"); return; }
+                if (!confirm(`Ditemukan ${jsonData.length} baris data. Yakin ingin mengunggah semuanya ke database?`)) return;
+
+                // Ambil max number saat ini dari database
+                const snapshot = await get(ref(db, 'participants'));
+                let maxNumber = 0;
+                if (snapshot.exists()) {
+                    snapshot.forEach((child) => {
+                        let code = child.key;
+                        if(code.startsWith("OH")) {
+                            let num = parseInt(code.substring(2));
+                            if(!isNaN(num) && num > maxNumber) maxNumber = num;
+                        }
+                    });
+                }
+
+                let updates = {};
+                let successCount = 0;
+
+                jsonData.forEach((row) => {
+                    // Deteksi nama kolom (bisa fleksibel huruf besar/kecil)
+                    let name = row["Nama"] || row["nama"] || row["Nama Lengkap"] || row["Name"];
+                    if (!name) return; // Lewati jika tidak ada kolom nama
+
+                    maxNumber++;
+                    let code = "OH" + (maxNumber < 10 ? "0" + maxNumber : maxNumber);
+                    
+                    let role = row["Status"] || row["status"] || row["Peran"] || "Siswa";
+                    let school = row["Asal Instansi"] || row["Asal Sekolah"] || row["Instansi"] || "-";
+
+                    updates[`participants/${code}`] = {
+                        name: name.toString().trim(),
+                        role: role.toString().trim(),
+                        school: school.toString().trim(),
+                        isPresent: false,
+                        hasVoted: false,
+                        votedCandidateId: null
+                    };
+                    successCount++;
+                });
+
+                if (successCount > 0) {
+                    await update(ref(db), updates);
+                    alert(`Upload Berhasil! ${successCount} peserta telah ditambahkan ke sistem.`);
+                    fileInput.value = "";
+                } else {
+                    alert("Gagal memproses. Pastikan tabel Excel kamu memiliki kolom berjudul 'Nama'.");
+                }
+            };
+            reader.readAsArrayBuffer(file);
         }
 
         // TAB KELOLA FINALIS
@@ -273,6 +354,7 @@
             logVoteTable.innerHTML = "";
 
             if (snapshot.exists()) {
+                let no = 1;
                 snapshot.forEach((child) => {
                     totalDaftar++;
                     let code = child.key;
@@ -292,15 +374,14 @@
                             <td><strong style="color:var(--primary); font-family:monospace;">${code}</strong></td>
                             <td><strong>${data.name}</strong></td>
                             <td><span class="badge badge-success">${candName}</span></td>
-                            <td>
-                                <button class="btn-sm-del" onclick="hapusVote('${code}')">Batalkan Vote</button>
-                            </td>
+                            <td><button class="btn-sm-del" onclick="hapusVote('${code}')">Batalkan Vote</button></td>
                         `;
                         logVoteTable.appendChild(vRow);
                     }
 
                     let row = document.createElement('tr');
                     row.innerHTML = `
+                        <td style="color:var(--text-muted); font-weight:600; text-align:center;">${no++}</td>
                         <td><strong style="color:var(--primary); font-family:monospace; font-size:15px;">${code}</strong></td>
                         <td><strong>${data.name}</strong></td>
                         <td><span style="color:var(--text-muted);">${data.role || '-'}</span></td>
@@ -314,12 +395,24 @@
                     tableBody.appendChild(row);
                 });
             } else {
-                tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada peserta terdaftar.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada peserta terdaftar.</td></tr>`;
             }
 
             document.getElementById('statDaftar').innerText = totalDaftar;
             document.getElementById('statHadir').innerText = totalHadir;
             document.getElementById('statVote').innerText = totalVote;
+
+            let pctHadir = totalDaftar > 0 ? ((totalHadir / totalDaftar) * 100).toFixed(1) : 0;
+            const rekapDiv = document.getElementById('rekapKehadiranBar');
+            if(rekapDiv) {
+                rekapDiv.innerHTML = `
+                    <div style="font-size:13px; font-weight:600; margin-bottom:4px; display:flex; justify-content:space-between;">
+                        <span>Persentase Kehadiran/Aktivasi</span>
+                        <span>${totalHadir} dari ${totalDaftar} Peserta (${pctHadir}%)</span>
+                    </div>
+                    <div class="vote-bar-bg"><div class="vote-bar-fill" style="width: ${pctHadir}%; background: var(--success);"></div></div>
+                `;
+            }
 
             const summaryTable = document.getElementById('finalistVoteSummaryTable');
             summaryTable.innerHTML = "";
@@ -466,6 +559,8 @@
         <!-- TAB 1: DAFTARKAN PESERTA -->
         <div id="tab-daftar" class="tab-content active">
             <h3>Form Pendaftaran Awal (RSVP)</h3>
+            
+            <!-- INPUT MANUAL -->
             <div class="form-group">
                 <label>Nama Lengkap Pengunjung</label>
                 <input type="text" id="regName" placeholder="Masukkan nama panjang...">
@@ -483,7 +578,15 @@
                     <input type="text" id="regSchool" placeholder="Contoh: SMAN 1 Surabaya">
                 </div>
             </div>
-            <button class="btn btn-primary" onclick="daftarkanPeserta()">Simpan dan Buat Kode Akses</button>
+            <button class="btn btn-primary" onclick="daftarkanPeserta()">Simpan dan Buat Kode Akses (Manual)</button>
+
+            <!-- UPLOAD EXCEL MASSAL -->
+            <div class="upload-box">
+                <h4>Upload Data Massal (Excel/CSV)</h4>
+                <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Pastikan baris pertama (header) memiliki kolom: <strong>Nama</strong>, <strong>Status</strong>, dan <strong>Asal Instansi</strong>.</p>
+                <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="margin-bottom: 15px;">
+                <button class="btn btn-success" onclick="uploadExcel()">Unggah Data Excel</button>
+            </div>
         </div>
 
         <!-- TAB 2: PESERTA TERDAFTAR -->
@@ -493,6 +596,7 @@
                 <table>
                     <thead>
                         <tr>
+                            <th style="width:50px; text-align:center;">No</th>
                             <th>Kode</th>
                             <th>Nama Lengkap</th>
                             <th>Status</th>
@@ -573,12 +677,17 @@
 
         <!-- TAB 5: LIVE HASIL VOTE -->
         <div id="tab-vote" class="tab-content">
-            <h3>Monitoring Perolehan Suara</h3>
+            <h3>Monitoring Perolehan Suara & Rekapitulasi</h3>
             
             <div class="stats-grid">
                 <div class="stat-card"><h4 id="statDaftar">0</h4><p>Total Terdaftar</p></div>
-                <div class="stat-card"><h4 id="statHadir">0</h4><p>Total Hadir</p></div>
+                <div class="stat-card"><h4 id="statHadir">0</h4><p>Sudah Diaktivasi (Hadir)</p></div>
                 <div class="stat-card"><h4 id="statVote" style="color:var(--success);">0</h4><p>Suara Masuk</p></div>
+            </div>
+
+            <!-- GRAFIK / BAR REKAPITULASI -->
+            <div style="background:#f8fafc; border:1px solid var(--border-color); padding:16px; border-radius:12px; margin-bottom:25px;" id="rekapKehadiranBar">
+                <!-- Bar diisi dinamis via JS -->
             </div>
 
             <h4 style="margin-bottom:12px; color:var(--text-main);">Perolehan Suara Finalis</h4>
