@@ -380,10 +380,14 @@
             window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
         }
 
-        window.editPeserta = function(code, name, email, emailSent, role, school) {
-            document.getElementById('editCodeHidden').value = code; document.getElementById('editName').value = name;
-            document.getElementById('editEmail').value = email; document.getElementById('editEmailSent').value = emailSent ? "true" : "false";
-            document.getElementById('editRole').value = role; document.getElementById('editSchool').value = school;
+        window.editPeserta = function(code, name, email, emailSent, isPresent, role, school) {
+            document.getElementById('editCodeHidden').value = code;
+            document.getElementById('editName').value = name;
+            document.getElementById('editEmail').value = email;
+            document.getElementById('editEmailSent').value = emailSent ? "true" : "false";
+            document.getElementById('editIsPresent').value = isPresent ? "true" : "false";
+            document.getElementById('editRole').value = role;
+            document.getElementById('editSchool').value = school;
             document.getElementById('editModal').classList.add('active');
         }
 
@@ -395,8 +399,10 @@
             if (!name) { alert("Nama lengkap wajib diisi!"); return; }
 
             await update(ref(db, `participants/${code}`), {
-                name: name, email: document.getElementById('editEmail').value.trim() || "-",
+                name: name,
+                email: document.getElementById('editEmail').value.trim() || "-",
                 emailSent: document.getElementById('editEmailSent').value === "true",
+                isPresent: document.getElementById('editIsPresent').value === "true",
                 role: document.getElementById('editRole').value.trim() || "-",
                 school: document.getElementById('editSchool').value.trim() || "-"
             });
@@ -510,6 +516,7 @@
                         let emailStatusBadge = data.emailSent ? '<span class="badge badge-success"><i class="fas fa-check"></i> Dikirim</span>' : '<span class="badge badge-secondary"><i class="fas fa-clock"></i> Belum</span>';
                         let safeName = (data.name || '').replace(/'/g, "\\'"); let safeEmail = (data.email || '').replace(/'/g, "\\'");
                         let safeRole = (data.role || '').replace(/'/g, "\\'"); let safeSchool = (data.school || '').replace(/'/g, "\\'");
+                        let safeIsPresent = data.isPresent ? true : false;
 
                         tableBody.innerHTML += `
                             <tr>
@@ -523,7 +530,7 @@
                                 <td>${data.isPresent ? '<span class="badge badge-success">Hadir</span>' : '<span class="badge badge-warning">Belum</span>'}</td>
                                 <td style="white-space: nowrap; display: flex; gap: 6px;">
                                     <button class="btn-sm-mail" onclick="kirimEmailKode('${data.code}', '${safeName}', '${safeEmail}')" title="Kirim Kode via Email"><i class="fas fa-envelope"></i></button>
-                                    <button class="btn-sm-edit" onclick="editPeserta('${data.code}', '${safeName}', '${safeEmail}', ${data.emailSent ? true : false}, '${safeRole}', '${safeSchool}')"><i class="fas fa-edit"></i></button>
+                                    <button class="btn-sm-edit" onclick="editPeserta('${data.code}', '${safeName}', '${safeEmail}', ${data.emailSent ? true : false}, ${safeIsPresent}, '${safeRole}', '${safeSchool}')"><i class="fas fa-edit"></i></button>
                                     <button class="btn-sm-del" onclick="hapusPeserta('${data.code}')"><i class="fas fa-trash"></i></button>
                                 </td>
                             </tr>`;
@@ -599,7 +606,7 @@
         window.konfirmasiAbsen = async function() {
             if(!currentAbsenCode) return;
             await update(ref(db, `participants/${currentAbsenCode}`), { isPresent: true });
-            document.getElementById('absenMsg').innerHTML = `<div style="background:#d1fae5; color:#065f46; padding:16px; border-radius:12px; font-weight:600;"><i class="fas fa-check-circle"></i> Verifikasi Berhasil: Peserta ${currentAbsenCode} Siap Vote. Silakan akses <a href="http://its.id/m/VotePSIC" target="_blank" style="color:var(--primary); text-decoration:underline;">its.id/m/VotePSIC</a> atau scan QR di lokasi.</div>`;
+            document.getElementById('absenMsg').innerHTML = `<div style="background:#d1fae5; color:#065f46; padding:16px; border-radius:12px; font-weight:600;"><i class="fas fa-check-circle"></i> Verifikasi Berhasil: Identitas cocok & Peserta ${currentAbsenCode} Siap Vote. Silakan akses <a href="http://its.id/m/VotePSIC" target="_blank" style="color:var(--primary); text-decoration:underline;">its.id/m/VotePSIC</a> atau scan QR di lokasi.</div>`;
             document.getElementById('prevStatusBadge').className = "badge badge-success"; document.getElementById('prevStatusBadge').innerHTML = "<i class='fas fa-check-double'></i> Sudah Hadir & Aktif";
             document.getElementById('btnKonfirmasiAbsen').classList.add('hidden'); document.getElementById('btnBatalAbsen').classList.remove('hidden');
         }
@@ -736,8 +743,18 @@
         <!-- TAB 3: LIVE ABSEN PESERTA -->
         <div id="tab-absen" class="tab-content">
             <h3><i class="fas fa-user-check"></i> Verifikasi Kehadiran Pengunjung</h3>
-            <p style="color:var(--text-muted); font-size:15px; margin-bottom:24px;">Masukkan kode akses pengunjung untuk memeriksa data dan membuka akses voting di lokasi:</p>
+            <p style="color:var(--text-muted); font-size:15px; margin-bottom:16px;">Masukkan kode akses pengunjung, lalu minta kartu identitas untuk mencocokkan nama sebelum verifikasi:</p>
             
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 12px; margin-bottom: 24px; display: flex; align-items: flex-start; gap: 12px;">
+                <i class="fas fa-id-card" style="color: var(--primary); font-size: 22px; margin-top: 2px;"></i>
+                <div style="font-size: 14px; color: #1e3a8a; line-height: 1.5;">
+                    <strong>Prosedur Verifikasi Meja Panitia:</strong><br>
+                    1. Masukkan kode akses yang ditunjukkan pengunjung.<br>
+                    2. <strong>Wajib minta kartu identitas</strong> (KTP/KTM/Kartu Pelajar) untuk mencocokkan nama pada data sistem.<br>
+                    3. Klik tombol konfirmasi setelah identitas terbukti valid.
+                </div>
+            </div>
+
             <div class="form-group">
                 <input type="text" id="absenCode" placeholder="Ketik Kode Acak (Contoh: A7K9)" style="text-transform:uppercase; font-size:24px; font-weight:700; letter-spacing:3px; text-align:center; padding:20px; max-width:400px; margin:0 auto; display:block;">
             </div>
@@ -756,7 +773,7 @@
                 <div class="preview-row"><span class="preview-label">Status Presensi</span><span id="prevStatusBadge"></span></div>
                 
                 <div class="flex-buttons">
-                    <button id="btnKonfirmasiAbsen" class="btn btn-success" style="flex:1; padding:16px;" onclick="konfirmasiAbsen()"><i class="fas fa-check-circle"></i> Konfirmasi Kehadiran & Aktifkan Vote</button>
+                    <button id="btnKonfirmasiAbsen" class="btn btn-success" style="flex:1; padding:16px;" onclick="konfirmasiAbsen()"><i class="fas fa-check-circle"></i> Sesuai & Konfirmasi Kehadiran</button>
                     <button id="btnBatalAbsen" class="btn btn-warning hidden" style="flex:1; padding:16px;" onclick="batalkanAbsen()"><i class="fas fa-times-circle"></i> Batalkan Kehadiran (Reset)</button>
                 </div>
             </div>
@@ -847,9 +864,16 @@
                     </select>
                 </div>
                 <div style="flex:1;">
-                    <label>Status / Peran</label>
-                    <input type="text" id="editRole">
+                    <label>Status Kehadiran</label>
+                    <select id="editIsPresent">
+                        <option value="false">Belum Hadir</option>
+                        <option value="true">Hadir (Aktif Vote)</option>
+                    </select>
                 </div>
+            </div>
+            <div class="form-group">
+                <label>Status / Peran</label>
+                <input type="text" id="editRole">
             </div>
             <div class="form-group">
                 <label>Asal Instansi</label>
