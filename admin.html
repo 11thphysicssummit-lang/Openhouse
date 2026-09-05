@@ -208,6 +208,7 @@
             const email = document.getElementById('regEmail').value.trim();
             const role = document.getElementById('regRole').value.trim();
             const school = document.getElementById('regSchool').value.trim();
+            const isPresent = document.getElementById('regIsPresent').checked || role.toLowerCase().includes("panitia");
 
             if (!name) { alert("Sila isi nama lengkap peserta!"); return; }
 
@@ -218,16 +219,17 @@
                 email: email || "-",
                 role: role || "Siswa",
                 school: school || "-",
-                isPresent: false,
+                isPresent: isPresent,
                 hasVoted: false,
                 votedCandidateId: null,
                 emailSent: false
             });
 
-            alert(`Berhasil Terdaftar.\n\nKODE AKSES PESERTA: ${code}`);
+            alert(`Berhasil Terdaftar.\n\nKODE AKSES PESERTA: ${code}\nStatus Kehadiran: ${isPresent ? 'Aktif (Hadir)' : 'Belum Hadir'}`);
             document.getElementById('regName').value = "";
             document.getElementById('regEmail').value = "";
             document.getElementById('regSchool').value = "";
+            document.getElementById('regIsPresent').checked = false;
         }
 
         window.uploadExcel = async function() {
@@ -270,13 +272,15 @@
                         let email = row["Email"] || row["email"] || row["E-mail"] || "-";
                         let role = row["Status"] || row["status"] || row["Peran"] || "Siswa";
                         let school = row["Asal Instansi"] || row["Asal Sekolah"] || row["Instansi"] || "-";
+                        
+                        let isPresent = role.toString().toLowerCase().includes("panitia");
 
                         updates[`participants/${code}`] = {
                             name: name.toString().trim(),
                             email: email.toString().trim(),
                             role: role.toString().trim(),
                             school: school.toString().trim(),
-                            isPresent: false,
+                            isPresent: isPresent,
                             hasVoted: false,
                             votedCandidateId: null,
                             emailSent: false
@@ -286,7 +290,7 @@
 
                     if (successCount > 0) {
                         await update(ref(db), updates);
-                        alert(`Upload Berhasil! ${successCount} peserta telah ditambahkan.`);
+                        alert(`Upload Berhasil! ${successCount} peserta telah ditambahkan dan akun Panitia langsung diaktifkan.`);
                         fileInput.value = "";
                     } else {
                         alert("Gagal memproses. Pastikan tabel memiliki kolom 'Nama'.");
@@ -294,6 +298,34 @@
                 });
             };
             reader.readAsArrayBuffer(file);
+        }
+
+        // FUNGSI AKTIFKAN SEMUA PANITIA SEKALIGUS
+        window.aktifkanSemuaPanitia = async function() {
+            bukaModalKonfirmasi("Aktifkan kehadiran seluruh peserta yang berstatus Panitia secara massal sekarang?", async () => {
+                const snapshot = await get(ref(db, 'participants'));
+                if (!snapshot.exists()) {
+                    alert("Tidak ada data peserta.");
+                    return;
+                }
+                let updates = {};
+                let count = 0;
+                snapshot.forEach((child) => {
+                    let code = child.key;
+                    let data = child.val();
+                    let role = (data.role || "").toLowerCase();
+                    if (role.includes("panitia")) {
+                        updates[`participants/${code}/isPresent`] = true;
+                        count++;
+                    }
+                });
+                if (count > 0) {
+                    await update(ref(db), updates);
+                    alert(`Berhasil! ${count} akun panitia telah diaktifkan secara otomatis.`);
+                } else {
+                    alert("Tidak ditemukan data dengan status Panitia.");
+                }
+            });
         }
 
         window.exportKeExcel = async function() {
@@ -334,7 +366,6 @@
             });
         }
 
-        // FUNGSI KIRIM KODE VIA EMAIL
         window.kirimEmailKode = async function(code, name, email) {
             if (!email || email === "-" || email.trim() === "") {
                 alert("Peserta ini belum memiliki alamat email yang valid!");
@@ -349,7 +380,6 @@
             window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
         }
 
-        // FUNGSI EDIT MODAL BARU (Bisa Edit Semua Field)
         window.editPeserta = function(code, name, email, emailSent, role, school) {
             document.getElementById('editCodeHidden').value = code;
             document.getElementById('editName').value = name;
@@ -489,7 +519,6 @@
                         ? '<span class="badge badge-success">Sudah Dikirim</span>' 
                         : '<span class="badge badge-secondary">Belum</span>';
 
-                    // Escape quotes for safety in inline function arguments
                     let safeName = (data.name || '').replace(/'/g, "\\'");
                     let safeEmail = (data.email || '').replace(/'/g, "\\'");
                     let safeRole = (data.role || '').replace(/'/g, "\\'");
@@ -656,19 +685,26 @@
                 <div class="form-group">
                     <label>Status Pengunjung</label>
                     <input type="text" id="regRole" list="roleOptions" value="Siswa" placeholder="Pilih atau ketik status...">
-                    <datalist id="roleOptions"><option value="Siswa"><option value="Guru / Pendamping"><option value="Orang Tua Murid"><option value="Mahasiswa"><option value="Umum"></datalist>
+                    <datalist id="roleOptions"><option value="Siswa"><option value="Guru / Pendamping"><option value="Orang Tua Murid"><option value="Mahasiswa"><option value="Panitia"><option value="Umum"></datalist>
                 </div>
                 <div class="form-group">
                     <label>Asal Sekolah / Instansi</label>
                     <input type="text" id="regSchool" placeholder="Contoh: SMAN 1 Surabaya">
                 </div>
             </div>
+            
+            <!-- Checkbox untuk langsung aktifkan kehadiran -->
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+                <input type="checkbox" id="regIsPresent" style="width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer;">
+                <label for="regIsPresent" style="margin: 0; cursor: pointer; color: var(--text-main); font-weight: 600;">Langsung Aktifkan Kehadiran (Untuk Panitia / Pengguna Khusus)</label>
+            </div>
+
             <button class="btn btn-primary" onclick="daftarkanPeserta()">Simpan dan Buat Kode Akses (Manual)</button>
 
             <!-- UPLOAD EXCEL MASSAL -->
             <div class="upload-box">
                 <h4>Upload Data Massal (Excel/CSV)</h4>
-                <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Pastikan baris pertama (header) memiliki kolom: <strong>Nama</strong>, <strong>Email</strong>, <strong>Status</strong>, dan <strong>Asal Instansi</strong>.</p>
+                <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Pastikan kolom memiliki: <strong>Nama</strong>, <strong>Email</strong>, <strong>Status</strong>, dan <strong>Asal Instansi</strong>.<br><em>Catatan: Baris yang status/perannya mengandung kata "Panitia" akan otomatis aktif (hadir).</em></p>
                 <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="margin-bottom: 15px;">
                 <button class="btn btn-success" onclick="uploadExcel()">Unggah Data Excel</button>
             </div>
@@ -678,7 +714,8 @@
         <div id="tab-peserta" class="tab-content">
             <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
                 <h3 style="margin: 0; border: none; padding: 0;">Daftar Seluruh Peserta</h3>
-                <div style="display: flex; gap: 10px;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-warning" style="width: auto; color: white;" onclick="aktifkanSemuaPanitia()">⚡ Aktifkan Semua Panitia</button>
                     <button class="btn btn-success" style="width: auto;" onclick="exportKeExcel()">📥 Download Excel</button>
                     <button class="btn btn-danger" style="width: auto;" onclick="hapusSemuaPeserta()">🗑️ Hapus Semua Data</button>
                 </div>
