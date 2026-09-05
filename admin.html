@@ -23,7 +23,7 @@
 
         * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.2s ease; }
         body { background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 24px; min-height: 100vh; }
-        .container { max-width: 1200px; margin: 0 auto; position: relative; }
+        .container { max-width: 1250px; margin: 0 auto; position: relative; }
 
         /* HEADER BANNER */
         .header-banner {
@@ -87,6 +87,8 @@
         .badge { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-block; }
         .badge-success { background: #d1fae5; color: #065f46; }
         .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-info { background: #e0f2fe; color: #0369a1; }
+        .badge-secondary { background: #f1f5f9; color: #64748b; }
 
         /* DETAIL CARD ABSEN */
         .preview-card { background: #f8fafc; border: 1.5px solid var(--border-color); border-radius: 12px; padding: 20px; margin-top: 20px; text-align: left; }
@@ -218,7 +220,8 @@
                 school: school || "-",
                 isPresent: false,
                 hasVoted: false,
-                votedCandidateId: null
+                votedCandidateId: null,
+                emailSent: false
             });
 
             alert(`Berhasil Terdaftar.\n\nKODE AKSES PESERTA: ${code}`);
@@ -275,7 +278,8 @@
                             school: school.toString().trim(),
                             isPresent: false,
                             hasVoted: false,
-                            votedCandidateId: null
+                            votedCandidateId: null,
+                            emailSent: false
                         };
                         successCount++;
                     });
@@ -308,6 +312,7 @@
                     "Email": val.email || "-",
                     "Status/Peran": val.role,
                     "Asal Instansi": val.school,
+                    "Status Email": val.emailSent ? "Sudah Dikirim" : "Belum",
                     "Kehadiran Hari H": val.isPresent ? "Hadir" : "Belum Hadir",
                     "Status Voting": val.hasVoted ? "Sudah Vote" : "Belum Vote"
                 });
@@ -329,14 +334,19 @@
             });
         }
 
-        // FUNGSI KIRIM KODE VIA EMAIL (Membuka Mailto Client)
-        window.kirimEmailKode = function(code, name, email) {
+        // FUNGSI KIRIM KODE VIA EMAIL (Templat Menarik & Update Status di DB)
+        window.kirimEmailKode = async function(code, name, email) {
             if (!email || email === "-" || email.trim() === "") {
                 alert("Peserta ini belum memiliki alamat email yang valid!");
                 return;
             }
-            const subject = encodeURIComponent("Kode Akses Open House Fisika ITS 2026");
-            const body = encodeURIComponent(`Halo ${name},\n\nTerima kasih telah mendaftar di Open House Fisika ITS 2026.\nBerikut adalah Kode Akses unik kamu untuk presensi dan voting pameran:\n\nKODE AKSES: ${code}\n\nTunjukkan kode ini di meja registrasi saat kedatanganmu di Departemen Fisika ITS.\n\nSampai jumpa di lokasi!`);
+            
+            const subject = encodeURIComponent("✨ Tiket & Kode Akses Resmi - Open House Fisika ITS 2026");
+            const body = encodeURIComponent(`Halo ${name},\n\nTerima kasih telah mendaftarkan diri pada acara Open House Fisika ITS 2026! Kami sangat antusias menyambut kehadiranmu di Departemen Fisika ITS.\n\nBerikut adalah KODE AKSES unikmu untuk presensi kehadiran dan voting pameran karya:\n\n📌 KODE AKSES : [ ${code} ]\n\nPetunjuk Singkat:\n1. Tunjukkan kode akses atau email ini kepada panitia di meja registrasi depan gedung.\n2. Setelah presensi dikonfirmasi, kamu berhak memberikan suara (voting) untuk karya kelompok finalis favoritmu.\n\nSimpan email ini baik-baik ya. Sampai jumpa di lokasi!\n\nSalam hangat,\nPanitia Open House Fisika ITS 2026`);
+            
+            // Tandai di database bahwa email sudah dikirim
+            await update(ref(db, `participants/${code}`), { emailSent: true });
+
             window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
         }
 
@@ -412,10 +422,19 @@
             logVoteTable.innerHTML = "";
 
             if (snapshot.exists()) {
-                let no = 1;
+                // Masukkan ke array agar bisa di-sort teratur (OH01, OH02, dst)
+                let participantsArray = [];
                 snapshot.forEach((child) => {
+                    participantsArray.push({ code: child.key, ...child.val() });
+                });
+                
+                // Sorting berdasarkan kode secara numerik/alfabetis rapi
+                participantsArray.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+
+                let no = 1;
+                participantsArray.forEach((data) => {
                     totalDaftar++;
-                    let code = child.key; let data = child.val();
+                    let code = data.code;
 
                     if(data.isPresent) totalHadir++;
                     if(data.hasVoted) {
@@ -432,12 +451,17 @@
                         logVoteTable.appendChild(vRow);
                     }
 
+                    let emailStatusBadge = data.emailSent 
+                        ? '<span class="badge badge-success">Sudah Dikirim</span>' 
+                        : '<span class="badge badge-secondary">Belum</span>';
+
                     let row = document.createElement('tr');
                     row.innerHTML = `
                         <td style="color:var(--text-muted); font-weight:600; text-align:center;">${no++}</td>
                         <td><strong style="color:var(--primary); font-family:monospace; font-size:15px;">${code}</strong></td>
                         <td><strong>${data.name}</strong></td>
                         <td><a href="mailto:${data.email}" style="color:var(--primary); text-decoration:none;">${data.email || '-'}</a></td>
+                        <td style="text-align:center;">${emailStatusBadge}</td>
                         <td><span style="color:var(--text-muted);">${data.role || '-'}</span></td>
                         <td>${data.school}</td>
                         <td>${data.isPresent ? '<span class="badge badge-success">Hadir</span>' : '<span class="badge badge-warning">Belum</span>'}</td>
@@ -450,7 +474,7 @@
                     tableBody.appendChild(row);
                 });
             } else {
-                tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada peserta terdaftar.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada peserta terdaftar.</td></tr>`;
             }
 
             document.getElementById('statDaftar').innerText = totalDaftar;
@@ -636,6 +660,7 @@
                             <th>Kode</th>
                             <th>Nama Lengkap</th>
                             <th>Email</th>
+                            <th style="text-align:center;">Status Email</th>
                             <th>Status</th>
                             <th>Asal Instansi</th>
                             <th>Absen</th>
