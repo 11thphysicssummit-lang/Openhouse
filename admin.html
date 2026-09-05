@@ -273,6 +273,7 @@
             logVoteTable.innerHTML = "";
 
             if (snapshot.exists()) {
+                let no = 1;
                 snapshot.forEach((child) => {
                     totalDaftar++;
                     let code = child.key;
@@ -301,6 +302,7 @@
 
                     let row = document.createElement('tr');
                     row.innerHTML = `
+                        <td style="color:var(--text-muted); font-weight:600; text-align:center;">${no++}</td>
                         <td><strong style="color:var(--primary); font-family:monospace; font-size:15px;">${code}</strong></td>
                         <td><strong>${data.name}</strong></td>
                         <td><span style="color:var(--text-muted);">${data.role || '-'}</span></td>
@@ -314,12 +316,25 @@
                     tableBody.appendChild(row);
                 });
             } else {
-                tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada peserta terdaftar.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">Belum ada peserta terdaftar.</td></tr>`;
             }
 
             document.getElementById('statDaftar').innerText = totalDaftar;
             document.getElementById('statHadir').innerText = totalHadir;
             document.getElementById('statVote').innerText = totalVote;
+
+            // Update info persentase rekap kehadiran di tab vote
+            let pctHadir = totalDaftar > 0 ? ((totalHadir / totalDaftar) * 100).toFixed(1) : 0;
+            const rekapDiv = document.getElementById('rekapKehadiranBar');
+            if(rekapDiv) {
+                rekapDiv.innerHTML = `
+                    <div style="font-size:13px; font-weight:600; margin-bottom:4px; display:flex; justify-content:space-between;">
+                        <span>Persentase Kehadiran/Aktivasi</span>
+                        <span>${totalHadir} dari ${totalDaftar} Peserta (${pctHadir}%)</span>
+                    </div>
+                    <div class="vote-bar-bg"><div class="vote-bar-fill" style="width: ${pctHadir}%; background: var(--success);"></div></div>
+                `;
+            }
 
             const summaryTable = document.getElementById('finalistVoteSummaryTable');
             summaryTable.innerHTML = "";
@@ -493,6 +508,7 @@
                 <table>
                     <thead>
                         <tr>
+                            <th style="width:50px; text-align:center;">No</th>
                             <th>Kode</th>
                             <th>Nama Lengkap</th>
                             <th>Status</th>
@@ -573,12 +589,17 @@
 
         <!-- TAB 5: LIVE HASIL VOTE -->
         <div id="tab-vote" class="tab-content">
-            <h3>Monitoring Perolehan Suara</h3>
+            <h3>Monitoring Perolehan Suara & Rekapitulasi</h3>
             
             <div class="stats-grid">
                 <div class="stat-card"><h4 id="statDaftar">0</h4><p>Total Terdaftar</p></div>
-                <div class="stat-card"><h4 id="statHadir">0</h4><p>Total Hadir</p></div>
+                <div class="stat-card"><h4 id="statHadir">0</h4><p>Sudah Diaktivasi (Hadir)</p></div>
                 <div class="stat-card"><h4 id="statVote" style="color:var(--success);">0</h4><p>Suara Masuk</p></div>
+            </div>
+
+            <!-- GRAFIK / BAR REKAPITULASI -->
+            <div style="background:#f8fafc; border:1px solid var(--border-color); padding:16px; border-radius:12px; margin-bottom:25px;" id="rekapKehadiranBar">
+                <!-- Bar diisi dinamis via JS -->
             </div>
 
             <h4 style="margin-bottom:12px; color:var(--text-main);">Perolehan Suara Finalis</h4>
