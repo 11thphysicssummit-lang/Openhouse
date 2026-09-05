@@ -185,7 +185,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, get, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // PERHATIAN: Pastikan Rules Database Firebase Anda diamankan jika akan dipublish ke publik
         const firebaseConfig = {
             apiKey: "AIzaSyACSezxOlaZvNNUsxmLi8mjH85q878k_tE",
             authDomain: "open-house-efb30.firebaseapp.com",
@@ -259,7 +258,7 @@
             const email = document.getElementById('regEmail').value.trim();
             const role = document.getElementById('regRole').value.trim();
             const school = document.getElementById('regSchool').value.trim();
-            const isPresent = document.getElementById('regIsPresent').checked || role.toLowerCase().includes("panitia");
+            const isPresent = document.getElementById('regIsPresent').checked;
 
             if (!name) { alert("Sila isi nama lengkap peserta!"); return; }
 
@@ -311,7 +310,7 @@
                         let email = row["Email"] || row["email"] || row["E-mail"] || "-";
                         let role = row["Status"] || row["status"] || row["Peran"] || "Siswa";
                         let school = row["Asal Instansi"] || row["Asal Sekolah"] || row["Instansi"] || "-";
-                        let isPresent = role.toString().toLowerCase().includes("panitia");
+                        let isPresent = false; // Kehadiran diatur manual atau via centang awal sesuai ketentuan
 
                         updates[`participants/${code}`] = {
                             name: name.toString().trim(), email: email.toString().trim(), role: role.toString().trim(),
@@ -329,20 +328,6 @@
                 }, false);
             };
             reader.readAsArrayBuffer(file);
-        }
-
-        window.aktifkanSemuaPanitia = async function() {
-            bukaModalKonfirmasi("Aktifkan kehadiran seluruh peserta berstatus <strong>Panitia</strong> secara massal?", async () => {
-                const snapshot = await get(ref(db, 'participants'));
-                if (!snapshot.exists()) { alert("Tidak ada data peserta."); return; }
-                let updates = {}; let count = 0;
-                snapshot.forEach((child) => {
-                    let role = (child.val().role || "").toLowerCase();
-                    if (role.includes("panitia")) { updates[`participants/${child.key}/isPresent`] = true; count++; }
-                });
-                if (count > 0) { await update(ref(db), updates); alert(`Berhasil! ${count} akun panitia diaktifkan.`); } 
-                else { alert("Tidak ditemukan data dengan status Panitia."); }
-            }, false);
         }
 
         window.exportKeExcel = async function() {
@@ -375,9 +360,68 @@
         window.kirimEmailKode = async function(code, name, email) {
             if (!email || email === "-" || email.trim() === "") { alert("Peserta ini belum memiliki alamat email yang valid!"); return; }
             const subject = encodeURIComponent("✨ Tiket & Kode Akses Resmi - Open House Fisika ITS 2026");
-            const body = encodeURIComponent(`Halo ${name},\n\nTerima kasih telah mendaftarkan diri pada acara Open House Fisika ITS 2026.\n\nBerikut adalah KODE AKSES unikmu:\n📌 KODE AKSES : [ ${code} ]\n\nSimpan email ini baik-baik ya. Sampai jumpa di lokasi!\n\nSalam hangat,\nPanitia Open House Fisika ITS`);
+            const body = encodeURIComponent(
+                `Halo ${name},\n\n` +
+                `Terima kasih telah mendaftarkan diri pada acara Open House Fisika ITS 2026 yang akan diselenggarakan pada:\n` +
+                `📅 Tanggal: 31 Oktober 2026\n` +
+                `📍 Lokasi: Departemen Fisika ITS\n\n` +
+                `Berikut adalah KODE AKSES unikmu untuk voting exhibition:\n` +
+                `📌 KODE AKSES : [ ${code} ]\n\n` +
+                `⚠️ PERHATIAN:\n` +
+                `1. Kode ini TIDAK DAPAT DIGUNAKAN sebelum kamu melakukan registrasi atau check-in di meja panitia saat hari-H di Departemen Fisika ITS.\n` +
+                `2. Jangan menyebarluaskan kode akses ini kepada siapa pun karena hanya berlaku untuk satu (1) kali penggunaan.\n\n` +
+                `Simpan email ini baik-baik ya. Sampai jumpa di lokasi!\n\n` +
+                `Salam hangat,\n` +
+                `Panitia Open House Fisika ITS`
+            );
             await update(ref(db, `participants/${code}`), { emailSent: true });
             window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+        }
+
+        window.kirimSemuaEmailOtomatis = async function() {
+            const snapshot = await get(ref(db, 'participants'));
+            if (!snapshot.exists()) { alert("Tidak ada data peserta."); return; }
+
+            let unSentList = [];
+            snapshot.forEach((child) => {
+                let val = child.val();
+                if (!val.emailSent && val.email && val.email !== "-" && val.email.trim() !== "") {
+                    unSentList.push({ code: child.key, name: val.name, email: val.email });
+                }
+            });
+
+            if (unSentList.length === 0) {
+                alert("Semua peserta dengan email valid sudah dikirimi email!");
+                return;
+            }
+
+            bukaModalKonfirmasi(`Akan memproses pengiriman email otomatis ke <strong>${unSentList.length} peserta</strong> yang belum dikirimi. Lanjutkan?`, async () => {
+                let updates = {};
+                unSentList.forEach(item => {
+                    updates[`participants/${item.code}/emailSent`] = true;
+                });
+                await update(ref(db), updates);
+
+                // Open first mailto as primary trigger and notify
+                let first = unSentList[0];
+                const subject = encodeURIComponent("✨ Tiket & Kode Akses Resmi - Open House Fisika ITS 2026");
+                const body = encodeURIComponent(
+                    `Halo ${first.name},\n\n` +
+                    `Terima kasih telah mendaftarkan diri pada acara Open House Fisika ITS 2026 yang akan diselenggarakan pada:\n` +
+                    `📅 Tanggal: 31 Oktober 2026\n` +
+                    `📍 Lokasi: Departemen Fisika ITS\n\n` +
+                    `Berikut adalah KODE AKSES unikmu untuk voting exhibition:\n` +
+                    `📌 KODE AKSES : [ ${first.code} ]\n\n` +
+                    `⚠️ PERHATIAN:\n` +
+                    `1. Kode ini TIDAK DAPAT DIGUNAKAN sebelum kamu melakukan registrasi atau check-in di meja panitia saat hari-H di Departemen Fisika ITS.\n` +
+                    `2. Jangan menyebarluaskan kode akses ini kepada siapa pun karena hanya berlaku untuk satu (1) kali penggunaan.\n\n` +
+                    `Simpan email ini baik-baik ya. Sampai jumpa di lokasi!\n\n` +
+                    `Salam hangat,\n` +
+                    `Panitia Open House Fisika ITS`
+                );
+                window.location.href = `mailto:${first.email}?subject=${subject}&body=${body}`;
+                alert(`Status ${unSentList.length} email telah diperbarui menjadi 'Sudah Dikirim' di sistem.`);
+            }, false);
         }
 
         window.editPeserta = function(code, name, email, emailSent, role, school) {
@@ -670,7 +714,7 @@
             
             <div class="form-group" style="display: flex; align-items: center; gap: 12px; background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 24px;">
                 <input type="checkbox" id="regIsPresent" style="width: 22px; height: 22px; accent-color: var(--primary); cursor: pointer;">
-                <label for="regIsPresent" style="margin: 0; cursor: pointer; color: var(--text-main); font-weight: 600;">Langsung Aktifkan Kehadiran (Untuk Panitia / Pengguna Khusus)</label>
+                <label for="regIsPresent" style="margin: 0; cursor: pointer; color: var(--text-main); font-weight: 600;">Langsung Aktifkan Kehadiran (Jika sudah check-in awal)</label>
             </div>
 
             <button class="btn btn-primary" onclick="daftarkanPeserta()"><i class="fas fa-save"></i> Simpan & Buat Kode Akses Acak</button>
@@ -679,7 +723,7 @@
             <label for="excelFile" class="upload-box" style="display: block;">
                 <i class="fas fa-file-excel"></i>
                 <h4>Upload Data Massal (Excel/CSV)</h4>
-                <p style="font-size:14px; color:var(--text-muted); margin-bottom:15px; line-height:1.5;">Pastikan kolom memiliki: <strong>Nama</strong>, <strong>Email</strong>, <strong>Status</strong>, dan <strong>Asal Instansi</strong>.<br><em>Catatan: Kode akan dibuat otomatis, dan baris "Panitia" langsung aktif.</em></p>
+                <p style="font-size:14px; color:var(--text-muted); margin-bottom:15px; line-height:1.5;">Pastikan kolom memiliki: <strong>Nama</strong>, <strong>Email</strong>, <strong>Status</strong>, dan <strong>Asal Instansi</strong>.<br><em>Catatan: Kode akan dibuat otomatis untuk setiap baris data.</em></p>
                 <input type="file" id="excelFile" accept=".xlsx, .xls, .csv">
                 <button class="btn btn-success" onclick="uploadExcel(); event.preventDefault();" style="margin-top: 10px;"><i class="fas fa-cloud-upload-alt"></i> Unggah Data Excel</button>
             </label>
@@ -690,7 +734,7 @@
             <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px; margin-bottom: 24px;">
                 <h3 style="margin: 0;"><i class="fas fa-list-ul"></i> Daftar Seluruh Peserta</h3>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button class="btn btn-warning" onclick="aktifkanSemuaPanitia()"><i class="fas fa-bolt"></i> Aktifkan Semua Panitia</button>
+                    <button class="btn btn-primary" onclick="kirimSemuaEmailOtomatis()"><i class="fas fa-paper-plane"></i> Kirim Semua Email Otomatis</button>
                     <button class="btn btn-success" onclick="exportKeExcel()"><i class="fas fa-download"></i> Download Excel</button>
                     <button class="btn btn-danger" onclick="hapusSemuaPeserta()"><i class="fas fa-trash-alt"></i> Hapus Semua</button>
                 </div>
@@ -737,7 +781,7 @@
         <!-- TAB 3: LIVE ABSEN PESERTA -->
         <div id="tab-absen" class="tab-content">
             <h3><i class="fas fa-user-check"></i> Verifikasi Kehadiran Pengunjung</h3>
-            <p style="color:var(--text-muted); font-size:15px; margin-bottom:24px;">Masukkan kode akses pengunjung (diperoleh via Email) untuk memeriksa data sebelum verifikasi:</p>
+            <p style="color:var(--text-muted); font-size:15px; margin-bottom:24px;">Masukkan kode akses pengunjung untuk memeriksa data dan membuka akses voting di lokasi:</p>
             
             <div class="form-group">
                 <input type="text" id="absenCode" placeholder="Ketik Kode Acak (Contoh: A7K9)" style="text-transform:uppercase; font-size:24px; font-weight:700; letter-spacing:3px; text-align:center; padding:20px; max-width:400px; margin:0 auto; display:block;">
