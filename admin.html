@@ -123,7 +123,7 @@
         }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal-box {
-            background: white; width: 90%; max-width: 420px; border-radius: 16px;
+            background: white; width: 90%; max-width: 460px; border-radius: 16px;
             padding: 28px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.2);
             transform: translateY(20px); transition: transform 0.3s ease;
         }
@@ -334,7 +334,7 @@
             });
         }
 
-        // FUNGSI KIRIM KODE VIA EMAIL (Tanggal 31 Okt 2026, Bawa Kartu Identitas, Jangan Disebar, 1x Pakai)
+        // FUNGSI KIRIM KODE VIA EMAIL
         window.kirimEmailKode = async function(code, name, email) {
             if (!email || email === "-" || email.trim() === "") {
                 alert("Peserta ini belum memiliki alamat email yang valid!");
@@ -344,10 +344,46 @@
             const subject = encodeURIComponent("✨ Tiket & Kode Akses Resmi - Open House Fisika ITS 2026");
             const body = encodeURIComponent(`Halo ${name},\n\nTerima kasih telah mendaftarkan diri pada acara Open House Fisika ITS 2026 yang akan diselenggarakan pada:\n\n📅 Tanggal: 31 Oktober 2026\n📍 Lokasi: Departemen Fisika ITS\n\nBerikut adalah KODE AKSES unikmu untuk presensi kehadiran dan voting pameran karya:\n\n📌 KODE AKSES : [ ${code} ]\n\n⚠️ PERINGATAN PENTING:\n- JANGAN SEBARKAN atau tunjukkan kode akses ini kepada orang lain.\n- Kode ini bersifat rahasia dan HANYA BISA DIGUNAKAN 1 KALI untuk proses presensi dan voting.\n\nPetunjuk Kehadiran:\n1. WAJIB MEMBAWA KARTU IDENTITAS (Kartu Pelajar/KTP/Identitas lainnya) untuk verifikasi.\n2. Datang langsung ke meja registrasi di Departemen Fisika ITS.\n3. Tunjukkan kartu identitas beserta email atau kode akses ini kepada panitia.\n4. Setelah dikonfirmasi hadir, kamu dapat menggunakan hak suara (voting) untuk memilih kelompok finalis favoritmu.\n\nSimpan email ini baik-baik ya. Sampai jumpa di lokasi!\n\nSalam hangat,\nPanitia Open House Fisika ITS 2026`);
             
-            // Tandai di database bahwa email sudah dikirim
             await update(ref(db, `participants/${code}`), { emailSent: true });
 
             window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+        }
+
+        // FUNGSI EDIT MODAL BARU (Bisa Edit Semua Field)
+        window.editPeserta = function(code, name, email, emailSent, role, school) {
+            document.getElementById('editCodeHidden').value = code;
+            document.getElementById('editName').value = name;
+            document.getElementById('editEmail').value = email;
+            document.getElementById('editEmailSent').value = emailSent ? "true" : "false";
+            document.getElementById('editRole').value = role;
+            document.getElementById('editSchool').value = school;
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        window.tutupEditModal = function() {
+            document.getElementById('editModal').classList.remove('active');
+        }
+
+        window.simpanEditPeserta = async function() {
+            let code = document.getElementById('editCodeHidden').value;
+            let name = document.getElementById('editName').value.trim();
+            let email = document.getElementById('editEmail').value.trim();
+            let emailSent = document.getElementById('editEmailSent').value === "true";
+            let role = document.getElementById('editRole').value.trim();
+            let school = document.getElementById('editSchool').value.trim();
+
+            if (!name) { alert("Nama lengkap wajib diisi!"); return; }
+
+            await update(ref(db, `participants/${code}`), {
+                name: name,
+                email: email || "-",
+                emailSent: emailSent,
+                role: role || "-",
+                school: school || "-"
+            });
+
+            alert("Data peserta berhasil diperbarui!");
+            tutupEditModal();
         }
 
         window.tambahFinalis = async function() {
@@ -427,7 +463,6 @@
                     participantsArray.push({ code: child.key, ...child.val() });
                 });
                 
-                // Sorting urut rapi berdasarkan kode (OH01, OH02, dst)
                 participantsArray.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
 
                 let no = 1;
@@ -454,6 +489,12 @@
                         ? '<span class="badge badge-success">Sudah Dikirim</span>' 
                         : '<span class="badge badge-secondary">Belum</span>';
 
+                    // Escape quotes for safety in inline function arguments
+                    let safeName = (data.name || '').replace(/'/g, "\\'");
+                    let safeEmail = (data.email || '').replace(/'/g, "\\'");
+                    let safeRole = (data.role || '').replace(/'/g, "\\'");
+                    let safeSchool = (data.school || '').replace(/'/g, "\\'");
+
                     let row = document.createElement('tr');
                     row.innerHTML = `
                         <td style="color:var(--text-muted); font-weight:600; text-align:center;">${no++}</td>
@@ -465,8 +506,8 @@
                         <td>${data.school}</td>
                         <td>${data.isPresent ? '<span class="badge badge-success">Hadir</span>' : '<span class="badge badge-warning">Belum</span>'}</td>
                         <td style="white-space: nowrap; display: flex; gap: 6px;">
-                            <button class="btn-sm-mail" onclick="kirimEmailKode('${code}', '${data.name}', '${data.email}')" title="Kirim Kode via Email">📧 Email</button>
-                            <button class="btn-sm-edit" onclick="editPeserta('${code}', '${data.name}', '${data.email}', '${data.role}', '${data.school}')">Edit</button>
+                            <button class="btn-sm-mail" onclick="kirimEmailKode('${code}', '${safeName}', '${safeEmail}')" title="Kirim Kode via Email">📧 Email</button>
+                            <button class="btn-sm-edit" onclick="editPeserta('${code}', '${safeName}', '${safeEmail}', ${data.emailSent ? true : false}, '${safeRole}', '${safeSchool}')">Edit</button>
                             <button class="btn-sm-del" onclick="hapusPeserta('${code}')">Hapus</button>
                         </td>
                     `;
@@ -513,14 +554,6 @@
                 });
             }
         });
-
-        window.editPeserta = async function(code, oldName, oldEmail, oldRole, oldSchool) {
-            let newName = prompt("Ubah Nama Peserta:", oldName); if(newName === null) return;
-            let newEmail = prompt("Ubah Email:", oldEmail);
-            let newRole = prompt("Ubah Status:", oldRole);
-            let newSchool = prompt("Ubah Asal Instansi:", oldSchool);
-            await update(ref(db, `participants/${code}`), { name: newName, email: newEmail, role: newRole, school: newSchool });
-        }
 
         window.hapusPeserta = function(code) {
             bukaModalKonfirmasi(`Hapus data peserta dengan kode ${code}?`, async () => {
@@ -751,6 +784,43 @@
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="tutupModal()">Batal</button>
                 <button class="btn-confirm" id="btnEksekusiModal">Ya, Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FORM EDIT PESERTA -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-box" style="text-align: left;">
+            <h3 class="modal-title" style="text-align: center; margin-bottom: 20px;">Edit Data Peserta</h3>
+            <input type="hidden" id="editCodeHidden">
+            
+            <div class="form-group">
+                <label>Nama Lengkap</label>
+                <input type="text" id="editName">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="editEmail">
+            </div>
+            <div class="form-group">
+                <label>Status Email</label>
+                <select id="editEmailSent">
+                    <option value="false">Belum</option>
+                    <option value="true">Sudah Dikirim</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Status / Peran</label>
+                <input type="text" id="editRole">
+            </div>
+            <div class="form-group">
+                <label>Asal Instansi</label>
+                <input type="text" id="editSchool">
+            </div>
+
+            <div class="modal-actions" style="margin-top: 24px;">
+                <button class="btn-cancel" onclick="tutupEditModal()">Batal</button>
+                <button class="btn btn-primary" style="flex: 1; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;" onclick="simpanEditPeserta()">Simpan Perubahan</button>
             </div>
         </div>
     </div>
