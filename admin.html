@@ -187,20 +187,27 @@
             if(evt) evt.currentTarget.classList.add('active');
         }
 
-        async function getNextCode() {
+        // Generator Kode Acak 4 Karakter Alfanumerik Unik
+        const CHAR_POOL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        function generateRandom4Char() {
+            let result = '';
+            for (let i = 0; i < 4; i++) {
+                result += CHAR_POOL.charAt(Math.floor(Math.random() * CHAR_POOL.length));
+            }
+            return result;
+        }
+
+        async function getUniqueRandomCode() {
             const snapshot = await get(ref(db, 'participants'));
-            if (!snapshot.exists()) return "OH01";
-            
-            let maxNumber = 0;
-            snapshot.forEach((child) => {
-                let code = child.key;
-                if(code.startsWith("OH")) {
-                    let num = parseInt(code.substring(2));
-                    if(!isNaN(num) && num > maxNumber) maxNumber = num;
-                }
-            });
-            let nextNumber = maxNumber + 1;
-            return "OH" + (nextNumber < 10 ? "0" + nextNumber : nextNumber);
+            let existingCodes = new Set();
+            if (snapshot.exists()) {
+                snapshot.forEach((child) => existingCodes.add(child.key));
+            }
+            let code;
+            do {
+                code = generateRandom4Char();
+            } while (existingCodes.has(code));
+            return code;
         }
 
         window.daftarkanPeserta = async function() {
@@ -212,7 +219,7 @@
 
             if (!name) { alert("Sila isi nama lengkap peserta!"); return; }
 
-            let code = await getNextCode();
+            let code = await getUniqueRandomCode();
 
             await set(ref(db, `participants/${code}`), {
                 name: name,
@@ -225,7 +232,7 @@
                 emailSent: false
             });
 
-            alert(`Berhasil Terdaftar.\n\nKODE AKSES PESERTA: ${code}\nStatus Kehadiran: ${isPresent ? 'Aktif (Hadir)' : 'Belum Hadir'}`);
+            alert(`Berhasil Terdaftar.\n\nKODE AKSES ACAK: ${code}\nStatus Kehadiran: ${isPresent ? 'Aktif (Hadir)' : 'Belum Hadir'}`);
             document.getElementById('regName').value = "";
             document.getElementById('regEmail').value = "";
             document.getElementById('regSchool').value = "";
@@ -247,17 +254,11 @@
 
                 if (jsonData.length === 0) { alert("File Excel kosong atau format tidak sesuai!"); return; }
                 
-                bukaModalKonfirmasi(`Ditemukan ${jsonData.length} baris data. Yakin ingin mengunggah semuanya ke sistem?`, async () => {
+                bukaModalKonfirmasi(`Ditemukan ${jsonData.length} baris data. Yakin ingin mengunggah semuanya ke sistem dengan kode acak?`, async () => {
                     const snapshot = await get(ref(db, 'participants'));
-                    let maxNumber = 0;
+                    let usedCodes = new Set();
                     if (snapshot.exists()) {
-                        snapshot.forEach((child) => {
-                            let code = child.key;
-                            if(code.startsWith("OH")) {
-                                let num = parseInt(code.substring(2));
-                                if(!isNaN(num) && num > maxNumber) maxNumber = num;
-                            }
-                        });
+                        snapshot.forEach((child) => usedCodes.add(child.key));
                     }
 
                     let updates = {};
@@ -267,8 +268,12 @@
                         let name = row["Nama"] || row["nama"] || row["Nama Lengkap"] || row["Name"];
                         if (!name) return;
 
-                        maxNumber++;
-                        let code = "OH" + (maxNumber < 10 ? "0" + maxNumber : maxNumber);
+                        let code;
+                        do {
+                            code = generateRandom4Char();
+                        } while (usedCodes.has(code));
+                        usedCodes.add(code);
+
                         let email = row["Email"] || row["email"] || row["E-mail"] || "-";
                         let role = row["Status"] || row["status"] || row["Peran"] || "Siswa";
                         let school = row["Asal Instansi"] || row["Asal Sekolah"] || row["Instansi"] || "-";
@@ -290,7 +295,7 @@
 
                     if (successCount > 0) {
                         await update(ref(db), updates);
-                        alert(`Upload Berhasil! ${successCount} peserta telah ditambahkan dan akun Panitia langsung diaktifkan.`);
+                        alert(`Upload Berhasil! ${successCount} peserta telah ditambahkan dengan kode acak 4 karakter dan akun Panitia langsung diaktifkan.`);
                         fileInput.value = "";
                     } else {
                         alert("Gagal memproses. Pastikan tabel memiliki kolom 'Nama'.");
@@ -493,7 +498,7 @@
                     participantsArray.push({ code: child.key, ...child.val() });
                 });
                 
-                participantsArray.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+                participantsArray.sort((a, b) => a.code.localeCompare(b.code));
 
                 let no = 1;
                 participantsArray.forEach((data) => {
@@ -699,12 +704,12 @@
                 <label for="regIsPresent" style="margin: 0; cursor: pointer; color: var(--text-main); font-weight: 600;">Langsung Aktifkan Kehadiran (Untuk Panitia / Pengguna Khusus)</label>
             </div>
 
-            <button class="btn btn-primary" onclick="daftarkanPeserta()">Simpan dan Buat Kode Akses (Manual)</button>
+            <button class="btn btn-primary" onclick="daftarkanPeserta()">Simpan dan Buat Kode Akses Acak (Manual)</button>
 
             <!-- UPLOAD EXCEL MASSAL -->
             <div class="upload-box">
                 <h4>Upload Data Massal (Excel/CSV)</h4>
-                <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Pastikan kolom memiliki: <strong>Nama</strong>, <strong>Email</strong>, <strong>Status</strong>, dan <strong>Asal Instansi</strong>.<br><em>Catatan: Baris yang status/perannya mengandung kata "Panitia" akan otomatis aktif (hadir).</em></p>
+                <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Pastikan kolom memiliki: <strong>Nama</strong>, <strong>Email</strong>, <strong>Status</strong>, dan <strong>Asal Instansi</strong>.<br><em>Catatan: Kode akan dibuat acak unik 4 karakter, dan baris "Panitia" langsung aktif (hadir).</em></p>
                 <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="margin-bottom: 15px;">
                 <button class="btn btn-success" onclick="uploadExcel()">Unggah Data Excel</button>
             </div>
@@ -747,7 +752,7 @@
             <p style="color:var(--text-muted); font-size:14px; margin-bottom:20px;">Masukkan kode akses pengunjung untuk memeriksa data sebelum verifikasi:</p>
             
             <div class="form-group">
-                <input type="text" id="absenCode" placeholder="Ketik Kode (Contoh: OH01)" style="text-transform:uppercase; font-size:18px; letter-spacing:1px; text-align:center;">
+                <input type="text" id="absenCode" placeholder="Ketik Kode Acak (Contoh: A7K9)" style="text-transform:uppercase; font-size:18px; letter-spacing:1px; text-align:center;">
             </div>
             <button class="btn btn-primary" onclick="cekKodeAbsen()">Cek Data Kode</button>
 
