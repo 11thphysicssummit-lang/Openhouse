@@ -334,7 +334,7 @@
             });
         }
 
-        // FUNGSI KIRIM KODE VIA EMAIL (Templat Menarik & Update Status di DB)
+        // FUNGSI KIRIM KODE VIA EMAIL (Disesuaikan ke Departemen Fisika ITS)
         window.kirimEmailKode = async function(code, name, email) {
             if (!email || email === "-" || email.trim() === "") {
                 alert("Peserta ini belum memiliki alamat email yang valid!");
@@ -342,7 +342,7 @@
             }
             
             const subject = encodeURIComponent("✨ Tiket & Kode Akses Resmi - Open House Fisika ITS 2026");
-            const body = encodeURIComponent(`Halo ${name},\n\nTerima kasih telah mendaftarkan diri pada acara Open House Fisika ITS 2026! Kami sangat antusias menyambut kehadiranmu di Departemen Fisika ITS.\n\nBerikut adalah KODE AKSES unikmu untuk presensi kehadiran dan voting pameran karya:\n\n📌 KODE AKSES : [ ${code} ]\n\nPetunjuk Singkat:\n1. Tunjukkan kode akses atau email ini kepada panitia di meja registrasi depan gedung.\n2. Setelah presensi dikonfirmasi, kamu berhak memberikan suara (voting) untuk karya kelompok finalis favoritmu.\n\nSimpan email ini baik-baik ya. Sampai jumpa di lokasi!\n\nSalam hangat,\nPanitia Open House Fisika ITS 2026`);
+            const body = encodeURIComponent(`Halo ${name},\n\nTerima kasih telah mendaftarkan diri pada acara Open House Fisika ITS 2026! Kami sangat antusias menyambut kehadiranmu di Departemen Fisika ITS.\n\nBerikut adalah KODE AKSES unikmu untuk presensi kehadiran dan voting pameran karya:\n\n📌 KODE AKSES : [ ${code} ]\n\nPetunjuk Singkat:\n1. Tunjukkan kode akses atau email ini kepada panitia di meja registrasi Departemen Fisika ITS.\n2. Setelah presensi dikonfirmasi, kamu berhak memberikan suara (voting) untuk karya kelompok finalis favoritmu.\n\nSimpan email ini baik-baik ya. Sampai jumpa di lokasi!\n\nSalam hangat,\nPanitia Open House Fisika ITS 2026`);
             
             // Tandai di database bahwa email sudah dikirim
             await update(ref(db, `participants/${code}`), { emailSent: true });
@@ -422,13 +422,12 @@
             logVoteTable.innerHTML = "";
 
             if (snapshot.exists()) {
-                // Masukkan ke array agar bisa di-sort teratur (OH01, OH02, dst)
                 let participantsArray = [];
                 snapshot.forEach((child) => {
                     participantsArray.push({ code: child.key, ...child.val() });
                 });
                 
-                // Sorting berdasarkan kode secara numerik/alfabetis rapi
+                // Sorting urut rapi berdasarkan kode (OH01, OH02, dst)
                 participantsArray.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
 
                 let no = 1;
