@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voting Exhibition - Open House Fisika</title>
+    <title>Voting & Dashboard Peserta - Open House Fisika</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --primary: #2563eb;
@@ -14,18 +15,20 @@
             --text-main: #0f172a;
             --text-muted: #64748b;
             --border-color: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
         }
 
         * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.2s ease; }
         body { background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
         
         .main-card {
-            background: var(--card-bg); width: 100%; max-width: 500px; padding: 32px 24px;
-            border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid var(--border-color); text-align: center;
+            background: var(--card-bg); width: 100%; max-width: 520px; padding: 32px 24px;
+            border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid var(--border-color);
         }
 
-        h2 { margin: 0 0 4px 0; font-size: 22px; font-weight: 700; color: var(--text-main); }
-        p { margin: 0 0 24px 0; color: var(--text-muted); font-size: 14px; }
+        h2 { margin: 0 0 4px 0; font-size: 22px; font-weight: 700; color: var(--text-main); text-align: center; }
+        .subtitle { margin: 0 0 24px 0; color: var(--text-muted); font-size: 14px; text-align: center; }
 
         input {
             width: 100%; padding: 14px 16px; border-radius: 10px; border: 1.5px solid #cbd5e1;
@@ -36,14 +39,26 @@
         .btn {
             width: 100%; padding: 14px; border-radius: 10px; border: none;
             background: var(--primary); color: white; font-weight: 700; font-size: 15px; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
         }
         .btn:hover { background: var(--primary-hover); }
+        .btn-danger { background: #ef4444; }
+        .btn-danger:hover { background: #dc2626; }
 
-        .alert { padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-top: 14px; }
+        .alert { padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-top: 14px; text-align: center; }
         .alert-error { background: #fee2e2; color: #991b1b; }
 
+        /* STATUS BADGES & TIMELINE */
+        .status-box { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+        .status-item { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+        .status-item:last-child { margin-bottom: 0; }
+        
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+        .badge-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .badge-warning { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
         /* CANDIDATE CARDS */
-        .candidate-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; text-align: left; }
+        .candidate-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; text-align: left; max-height: 350px; overflow-y: auto; padding-right: 4px; }
         .candidate-item {
             border: 2px solid var(--border-color); border-radius: 12px; padding: 12px;
             display: flex; align-items: center; gap: 14px; cursor: pointer; background: white;
@@ -55,13 +70,15 @@
         .candidate-title { font-weight: 700; font-size: 15px; color: var(--text-main); }
         .candidate-school { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
-        .hidden { display: none; }
+        .history-card { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px; margin-bottom: 20px; text-align: left; }
+        
+        .hidden { display: none !important; }
     </style>
 
     <!-- Firebase SDK Modular -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyACSezxOlaZvNNUsxmLi8mjH85q878k_tE",
@@ -78,8 +95,9 @@
 
         let activeCode = "";
         let selectedCandidateId = "";
+        let candidatesData = {};
 
-        window.verifikasiKode = async function() {
+        window.masukDashboard = async function() {
             const codeInput = document.getElementById('userCode').value.trim().toUpperCase();
             const msgBox = document.getElementById('msgBox');
             msgBox.className = "alert hidden";
@@ -98,26 +116,18 @@
                     return;
                 }
 
-                const data = snapshot.val();
-
-                if (!data.isPresent) {
-                    showMsg("Kode Anda belum diaktifkan. Sila registrasi di meja panitia.");
-                    return;
-                }
-
-                if (data.hasVoted) {
-                    showMsg("Kode ini sudah pernah digunakan untuk memilih.");
-                    return;
-                }
-
                 activeCode = codeInput;
-                
-                // Load Candidate List
-                await loadCandidates();
+                await loadCandidatesData();
 
-                document.getElementById('step-verifikasi').classList.add('hidden');
-                document.getElementById('step-voting').classList.remove('hidden');
-                document.getElementById('welcomeName').innerText = "Selamat datang, " + (data.name || "Peserta");
+                // Real-time listener untuk status peserta
+                onValue(participantRef, (snap) => {
+                    if (snap.exists()) {
+                        renderDashboard(snap.val());
+                    }
+                });
+
+                document.getElementById('step-login').classList.add('hidden');
+                document.getElementById('step-dashboard').classList.remove('hidden');
 
             } catch (err) {
                 console.error(err);
@@ -125,20 +135,76 @@
             }
         }
 
-        async function loadCandidates() {
+        async function loadCandidatesData() {
             const candidateSnap = await get(ref(db, 'candidates'));
+            candidatesData = {};
+            if (candidateSnap.exists()) {
+                candidateSnap.forEach((child) => {
+                    candidatesData[child.key] = child.val();
+                });
+            }
+        }
+
+        function renderDashboard(data) {
+            document.getElementById('welcomeName').innerText = "Halo, " + (data.name || "Peserta");
+
+            // Status RSVP & Verifikasi
+            const statusRSVP = document.getElementById('statusRSVP');
+            const statusVerifikasi = document.getElementById('statusVerifikasi');
+
+            statusRSVP.className = "badge badge-success";
+            statusRSVP.innerHTML = `<i class="fas fa-check"></i> Sudah RSVP`;
+
+            if (data.isPresent) {
+                statusVerifikasi.className = "badge badge-success";
+                statusVerifikasi.innerHTML = `<i class="fas fa-check-double"></i> Sudah Daftar Ulang (Hadir)`;
+            } else {
+                statusVerifikasi.className = "badge badge-warning";
+                statusVerifikasi.innerHTML = `<i class="fas fa-clock"></i> Belum Daftar Ulang di Meja Panitia`;
+            }
+
+            const votingSection = document.getElementById('votingSection');
+            const historySection = document.getElementById('historySection');
+            const lockedNotice = document.getElementById('lockedNotice');
+
+            if (!data.isPresent) {
+                // Belum verifikasi di meja panitia -> Kunci voting
+                votingSection.classList.add('hidden');
+                historySection.classList.add('hidden');
+                lockedNotice.classList.remove('hidden');
+            } else {
+                lockedNotice.classList.add('hidden');
+                if (data.hasVoted) {
+                    // Sudah voting -> Tampilkan riwayat dan opsi batalkan
+                    votingSection.classList.add('hidden');
+                    historySection.classList.remove('hidden');
+                    
+                    let cand = candidatesData[data.votedCandidateId];
+                    document.getElementById('historyCandidateName').innerText = cand ? cand.name : "Pilihan Tersimpan";
+                    document.getElementById('historyCandidateSchool').innerText = cand ? cand.school : "";
+                    if(cand && cand.photo) {
+                        document.getElementById('historyCandidateImg').src = cand.photo;
+                    }
+                } else {
+                    // Belum voting -> Tampilkan pilihan finalis
+                    votingSection.classList.remove('hidden');
+                    historySection.classList.add('hidden');
+                    renderCandidateChoices();
+                }
+            }
+        }
+
+        function renderCandidateChoices() {
             const container = document.getElementById('candidateContainer');
             container.innerHTML = "";
 
-            if (!candidateSnap.exists()) {
-                container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">Belum ada finalis yang terdaftar.</p>`;
+            if (Object.keys(candidatesData).length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:var(--text-muted);">Belum ada finalis terdaftar.</p>`;
                 return;
             }
 
-            candidateSnap.forEach((child) => {
-                let id = child.key;
-                let data = child.val();
-
+            Object.keys(candidatesData).forEach(id => {
+                let data = candidatesData[id];
                 let item = document.createElement('div');
                 item.className = "candidate-item";
                 item.onclick = function() {
@@ -170,13 +236,27 @@
                     hasVoted: true,
                     votedCandidateId: selectedCandidateId
                 });
-
-                document.getElementById('step-voting').classList.add('hidden');
-                document.getElementById('step-sukses').classList.remove('hidden');
-
+                alert("Suara Anda berhasil dikirim!");
             } catch (err) {
                 console.error(err);
-                alert("Gagal mengirim suara. Coba lagi.");
+                alert("Gagal mengirim suara.");
+            }
+        }
+
+        window.batalkanVote = async function() {
+            if(!confirm("Yakin ingin membatalkan pilihan voting Anda? Anda dapat memilih ulang.")) return;
+
+            try {
+                const participantRef = ref(db, `participants/${activeCode}`);
+                await update(participantRef, {
+                    hasVoted: false,
+                    votedCandidateId: null
+                });
+                selectedCandidateId = "";
+                alert("Pilihan Anda berhasil dibatalkan.");
+            } catch (err) {
+                console.error(err);
+                alert("Gagal membatalkan suara.");
             }
         }
 
@@ -190,29 +270,61 @@
 <body>
 
     <div class="main-card">
-        <h2>Voting Exhibition Stand</h2>
-        <p>Open House Departemen Fisika 2026</p>
+        <h2>Open House Fisika 2026</h2>
+        <p class="subtitle">Portal Dashboard & Voting Exhibition</p>
 
-        <!-- STEP 1: VERIFIKASI KODE -->
-        <div id="step-verifikasi">
-            <input type="text" id="userCode" placeholder="Masukkan Kode Akses (cth: OH01)" style="text-transform:uppercase;">
-            <button class="btn" onclick="verifikasiKode()">Masuk ke Halaman Vote</button>
+        <!-- STEP 1: LOGIN KODE -->
+        <div id="step-login">
+            <input type="text" id="userCode" placeholder="Masukkan Kode Akses Anda" style="text-transform:uppercase;">
+            <button class="btn" onclick="masukDashboard()"><i class="fas fa-sign-in-alt"></i> Masuk ke Dashboard</button>
             <div id="msgBox" class="alert hidden"></div>
         </div>
 
-        <!-- STEP 2: PILIH FINALIS DARI DATABASE -->
-        <div id="step-voting" class="hidden">
-            <h4 id="welcomeName" style="color:var(--primary); margin-top:0; margin-bottom:16px;"></h4>
-            <div class="candidate-list" id="candidateContainer">
-                <!-- Data kandidat terisi dari Firebase -->
+        <!-- STEP 2: DASHBOARD UTAMA PESERTA -->
+        <div id="step-dashboard" class="hidden">
+            <h4 id="welcomeName" style="color:var(--primary); margin-top:0; margin-bottom:12px; font-size:18px;"></h4>
+            
+            <!-- STATUS BOX -->
+            <div class="status-box">
+                <div class="status-item">
+                    <span>Status RSVP:</span>
+                    <span id="statusRSVP" class="badge badge-success">-</span>
+                </div>
+                <div class="status-item">
+                    <span>Status Verifikasi:</span>
+                    <span id="statusVerifikasi" class="badge badge-warning">-</span>
+                </div>
             </div>
-            <button class="btn" onclick="kirimVote()">Kirim Suara Anda</button>
-        </div>
 
-        <!-- STEP 3: SUKSES -->
-        <div id="step-sukses" class="hidden">
-            <h3 style="color:#10b981; margin:0 0 10px 0;">Suara Berhasil Terkirim</h3>
-            <p>Terima kasih atas partisipasi Anda dalam Open House Departemen Fisika 2026.</p>
+            <!-- NOTICE JIKA BELUM VERIFIKASI -->
+            <div id="lockedNotice" class="hidden" style="text-align: center; padding: 20px 0; color: var(--text-muted);">
+                <i class="fas fa-lock" style="font-size: 32px; color: var(--warning); margin-bottom: 10px; display: block;"></i>
+                <p style="margin: 0; font-size: 14px;">Akses voting terkunci. Sila tunjukkan kartu identitas dan kode Anda ke <strong>meja panitia di Departemen Fisika ITS</strong> pada 31 Oktober 2026 untuk melakukan daftar ulang/check-in.</p>
+            </div>
+
+            <!-- VOTING SECTION (JIKA BELUM VOTE) -->
+            <div id="votingSection" class="hidden">
+                <p style="font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px;">Pilih Kelompok Finalis Exhibition Favorit Anda:</p>
+                <div class="candidate-list" id="candidateContainer">
+                    <!-- Kandidat dimuat dinamis -->
+                </div>
+                <button class="btn" onclick="kirimVote()"><i class="fas fa-paper-plane"></i> Kirim Suara Anda</button>
+            </div>
+
+            <!-- HISTORY SECTION (JIKA SUDAH VOTE) -->
+            <div id="historySection" class="hidden">
+                <div class="history-card">
+                    <div style="font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 8px;"><i class="fas fa-history"></i> Riwayat Voting Anda</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img id="historyCandidateImg" src="" class="candidate-img" alt="Foto">
+                        <div>
+                            <div id="historyCandidateName" style="font-weight: 700; font-size: 15px;">-</div>
+                            <div id="historyCandidateSchool" style="font-size: 12px; color: var(--text-muted);"></div>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-danger" onclick="batalkanVote()"><i class="fas fa-undo"></i> Batalkan Voting & Pilih Ulang</button>
+            </div>
         </div>
     </div>
 
